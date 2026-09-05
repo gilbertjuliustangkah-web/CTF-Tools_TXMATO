@@ -1,0 +1,38 @@
+{% if result.success %}
+<div class="card" style="border-color:var(--purple)">
+  <div class="card-title" style="color:var(--purple)">Result — {{ mode }}</div>
+
+  {% set d = result.data %}
+
+  {% if 'result' in d %}
+    <div class="mono-block">{{ d.result }}</div>
+
+  {% elif 'detections' in d %}
+    {% set det = d.detections %}
+    {% if not det %}
+      <p style="color:var(--dim);font-size:12px">No encoding detected.</p>
+    {% else %}
+      {% for enc, val in det.items() %}
+        {% if enc == 'hash_hints' %}
+          {% if val %}
+          <p style="font-size:12px;margin-bottom:8px">
+            <span style="color:var(--dim)">Hash hints:</span>
+            <span style="color:var(--yellow)">{{ val | join(', ') }}</span>
+          </p>
+          {% endif %}
+        {% else %}
+          <div style="margin-bottom:12px">
+            <div style="font-size:11px;color:var(--dim);margin-bottom:4px">{{ enc }}</div>
+            <div class="mono-block">{{ val }}</div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
+</div>
+{% else %}
+<div class="card" style="border-color:var(--red)">
+  <div class="card-title" style="color:var(--red)">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

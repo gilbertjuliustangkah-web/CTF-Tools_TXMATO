@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Forensic{% endblock %}
+{% block topbar_title %}Forensic — File Inspector{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Upload &amp; Inspect</div>
+  <form
+    hx-post="/forensic/upload"
+    hx-target="#forensic-result"
+    hx-indicator="#forensic-indicator"
+    hx-encoding="multipart/form-data"
+    style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"
+  >
+    <div style="flex:1;min-width:200px">
+      <label>Challenge file (saved into the active workspace)</label>
+      <input type="file" name="file" required>
+    </div>
+    <button class="btn btn-primary" type="submit">
+      ⊘ Inspect
+      <span class="htmx-indicator" id="forensic-indicator">…</span>
+    </button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">Inspect by Path (workspace only)</div>
+  <form
+    hx-post="/forensic/inspect"
+    hx-target="#forensic-result"
+    hx-indicator="#forensic-indicator"
+    style="display:flex;gap:10px;align-items:flex-end"
+  >
+    <div style="flex:1">
+      <label>File Path (relative to the active workspace: <code>workspace/{{ active_ws }}/</code>)</label>
+      <input type="text" name="filepath" placeholder="challenge.zip" required>
+    </div>
+    <button class="btn btn-ghost" type="submit">
+      ⊘ Inspect
+      <span class="htmx-indicator" id="forensic-indicator">…</span>
+    </button>
+  </form>
+  <p style="font-size:11px;color:var(--dim);margin-top:8px">
+    For safety, the web inspector only reads files inside the active workspace folder.
+    Use the CLI (<code>ctf forensic inspect &lt;path&gt;</code>) to inspect arbitrary files.
+  </p>
+</div>
+
+<div id="forensic-result"></div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Crypto{% endblock %}
+{% block topbar_title %}Crypto — Encode / Decode{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Encode / Decode</div>
+  <form
+    hx-post="/crypto/encode"
+    hx-target="#crypto-result"
+    hx-indicator="#crypto-indicator"
+  >
+    <label>Input</label>
+    <textarea name="data" rows="4" placeholder="Paste string, hash, or encoded data here…" style="font-family:var(--font-mono);font-size:12px"></textarea>
+
+    <label style="margin-top:12px">Mode</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;margin-top:4px">
+      {% for m in ['detect','b64enc','b64dec','hexenc','hexdec','binenc','bindec','urlenc','urldec','rot13'] %}
+      <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;font-size:12px;color:var(--text)">
+        <input type="radio" name="mode" value="{{ m }}" {% if m == 'detect' %}checked{% endif %}
+               style="width:auto;accent-color:var(--accent)">
+        {{ m }}
+      </label>
+      {% endfor %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">
+      ⊕ Run
+      <span class="htmx-indicator" id="crypto-indicator">…</span>
+    </button>
+  </form>
+</div>
+
+<div id="crypto-result"></div>
+{% endblock %}

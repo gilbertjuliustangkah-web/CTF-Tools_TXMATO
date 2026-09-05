@@ -1,0 +1,59 @@
+<div id="tool-{{ entry.id }}" class="tool-row">
+  <div class="tool-row-head">
+    <div class="tool-name-wrap">
+      <span class="tool-name">{{ entry.name }}</span>
+      {% if status %}
+        <span class="badge {{ {'binary':'badge-binary','forensics':'badge-forensic','crypto':'badge-crypto','web':'badge-web','recon':'badge-recon','stego':'badge-stego','osint':'badge-osint','misc':'badge-misc'}.get(entry.category, 'badge-misc') }}">{{ entry.category }}</span>
+        <span class="badge badge-src">{{ entry.source }}</span>
+      {% endif %}
+    </div>
+    <div class="tool-actions">
+      {% if status %}
+        {% if not status.supported %}
+          <span class="badge badge-na noselect" title="Not supported on this platform">N/A on this OS</span>
+
+        {% elif status.installed %}
+          <span class="badge badge-open">{{ '✓ ' if status.kind != 'manual' else '' }}{{ status.kind }} installed</span>
+          {% if entry.source in ['pip', 'apt', 'git', 'docker'] %}
+            <button class="btn btn-danger btn-tiny"
+                    hx-post="/tools/uninstall" hx-target="#tool-{{ entry.id }}" hx-swap="outerHTML"
+                    hx-include="#form-{{ entry.id }}" hx-indicator="#spinner-{{ entry.id }}">Uninstall</button>
+          {% endif %}
+
+        {% elif entry.source == 'manual' %}
+          <span class="badge badge-missing">not installed</span>
+
+        {% else %}
+          <span class="badge badge-missing">not installed</span>
+          <button class="btn btn-primary btn-tiny"
+                  hx-post="/tools/install" hx-target="#tool-{{ entry.id }}" hx-swap="outerHTML"
+                  hx-include="#form-{{ entry.id }}" hx-indicator="#spinner-{{ entry.id }}">Install</button>
+        {% endif %}
+        <span id="spinner-{{ entry.id }}" class="htmx-indicator">working…</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="tool-desc">{{ entry.description }}</div>
+
+  <div class="tool-meta">
+    {% if entry.url %}<a href="{{ entry.url }}" target="_blank" rel="noopener">homepage ↗</a>{% endif %}
+    {% if entry.install_cmd %}<span class="mono-tiny">{{ entry.install_cmd | join(' ') }}</span>{% endif %}
+    {% if entry.install_hint %}<span style="color:var(--yellow)">{{ entry.install_hint }}</span>{% endif %}
+    {% if entry.supported and not status.supported %}
+      <span style="color:var(--red)">{{ entry.install_hint }}</span>
+    {% endif %}
+  </div>
+
+  {% if job %}
+  <details class="tool-log" {% if job and not job.ok %}open{% endif %}>
+    <summary>{{ 'Install' if job and job.get('action') != 'uninstall' else 'Uninstall' }} output —
+      {% if job.ok %}<span style="color:var(--green)">OK</span>{% else %}<span style="color:var(--red)">FAILED</span>{% endif %}</summary>
+    <pre class="mono-block" style="max-height:220px;margin-top:8px">{{ job.output or job.error or '(no output)' }}</pre>
+  </details>
+  {% endif %}
+</div>
+
+<form id="form-{{ entry.id }}" style="display:none">
+  <input type="hidden" name="tool_id" value="{{ entry.id }}">
+</form>

@@ -1,0 +1,49 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card" style="border-color:var(--cyan)">
+  <div class="card-title" style="color:var(--cyan)">File Inspection Result</div>
+
+  <table style="margin-bottom:12px">
+    <tr><td style="color:var(--dim);width:120px">Path</td><td>{{ d.path }}</td></tr>
+    <tr><td style="color:var(--dim)">Type</td><td style="color:var(--yellow)">{{ d.file_type }}</td></tr>
+    <tr><td style="color:var(--dim)">Size</td><td>{{ d.size_human }} ({{ d.size_bytes }} bytes)</td></tr>
+    <tr>
+      <td style="color:var(--dim)">Entropy</td>
+      <td>
+        {{ d.entropy }} / 8.0
+        {% if d.entropy > 7.5 %}
+          <span style="color:var(--red);font-size:11px"> ← high (possibly encrypted/packed)</span>
+        {% elif d.entropy > 6.0 %}
+          <span style="color:var(--yellow);font-size:11px"> ← medium</span>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Hex preview</div>
+  <div class="mono-block" style="color:var(--cyan);font-size:11px">{{ d.hex_preview }}</div>
+
+  {% if d.get('exiftool') %}
+  <div style="font-size:11px;color:var(--dim);margin:12px 0 4px">Exiftool metadata</div>
+  <div class="mono-block" style="font-size:11px">{{ d.exiftool[:800] }}</div>
+  {% endif %}
+
+  {% set strings = d.get('strings', []) %}
+  {% if strings %}
+  <details style="margin-top:12px">
+    <summary style="cursor:pointer;font-size:12px;color:var(--dim)">
+      Strings ({{ strings | length }}) — click to expand
+    </summary>
+    <div class="mono-block" style="margin-top:8px;color:var(--text)">
+      {% for s in strings[:60] %}{{ s }}
+{% endfor %}{% if strings|length > 60 %}… {{ strings|length - 60 }} more{% endif %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+{% else %}
+<div class="card" style="border-color:var(--red)">
+  <div class="card-title" style="color:var(--red)">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

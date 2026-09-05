@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Tools{% endblock %}
+{% block topbar_title %}CTF Tool Catalog{% endblock %}
+
+{% block content %}
+{% set badge_map = {
+  'binary':    'badge-binary',
+  'forensics': 'badge-forensic',
+  'crypto':    'badge-crypto',
+  'web':       'badge-web',
+  'recon':     'badge-recon',
+  'stego':     'badge-stego',
+  'osint':     'badge-osint',
+  'misc':      'badge-misc',
+} %}
+
+<div class="grid-3" style="margin-bottom:20px">
+  <div class="card stat-box">
+    <div class="stat-value">{{ summary.installed }}</div>
+    <div class="stat-label">installed</div>
+  </div>
+  <div class="card stat-box">
+    <div class="stat-value">{{ summary.total }}</div>
+    <div class="stat-label">tools in catalog</div>
+  </div>
+  <div class="card stat-box">
+    <div class="stat-value">{{ groups | length }}</div>
+    <div class="stat-label">categories</div>
+  </div>
+</div>
+
+{% for group in groups %}
+<div class="card" style="padding:12px 20px">
+  <div class="card-title" style="margin-bottom:8px">
+    {{ group.label }}
+    <span class="badge {{ badge_map.get(group.category, 'badge-misc') }}" style="margin-left:6px">{{ group.category }}</span>
+    <span style="color:var(--dim);float:right">
+      {{ group.installed }}/{{ group.tools | length }}
+    </span>
+  </div>
+
+  {% for item in group.tools %}
+    {% with entry = item.entry, status = item.status, job = none, error = '' %}
+      {% include "partials/tool_card.html" %}
+    {% endwith %}
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

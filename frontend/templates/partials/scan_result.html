@@ -1,0 +1,40 @@
+{% if result.success %}
+<div class="card" style="border-color:var(--green)">
+  <div class="card-title" style="color:var(--green)">Scan Result — {{ target }}</div>
+  {% set ports = result.data.get('ports', []) %}
+  {% if ports %}
+    <table>
+      <thead>
+        <tr>
+          <th>Port</th>
+          <th>Protocol</th>
+          <th>State</th>
+          <th>Service</th>
+          <th>Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in ports %}
+        <tr>
+          <td style="color:var(--yellow)">{{ p.port }}</td>
+          <td style="color:var(--dim)">{{ p.get('protocol','tcp') }}</td>
+          <td><span class="badge badge-open">open</span></td>
+          <td style="color:var(--cyan)">{{ p.service }}</td>
+          <td style="color:var(--dim)">{{ p.get('version','') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p style="color:var(--dim);font-size:12px">No open ports found.</p>
+  {% endif %}
+  <p style="font-size:11px;color:var(--dim);margin-top:10px">
+    Method: {{ result.data.get('method','?') }} — Saved to workspace.
+  </p>
+</div>
+{% else %}
+<div class="card" style="border-color:var(--red)">
+  <div class="card-title" style="color:var(--red)">Scan Failed</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

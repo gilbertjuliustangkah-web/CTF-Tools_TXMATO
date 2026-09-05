@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_title %}Dashboard — {{ active_ws }}{% endblock %}
+
+{% block content %}
+<div class="grid-3" style="margin-bottom:16px">
+  <div class="card stat-box">
+    <div class="stat-value">{{ results | length }}</div>
+    <div class="stat-label">Scan Results</div>
+  </div>
+  <div class="card stat-box">
+    <div class="stat-value">{{ flags | length }}</div>
+    <div class="stat-label">Flags Captured</div>
+  </div>
+  <div class="card stat-box">
+    <div class="stat-value" style="color:var(--green)">
+      {% if workspace.target_ip %}{{ workspace.target_ip }}{% else %}—{% endif %}
+    </div>
+    <div class="stat-label">Target IP</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Recent results -->
+  <div class="card">
+    <div class="card-title">Recent Scan Results</div>
+    {% if results %}
+      <table>
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Target</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td><span class="badge badge-{{ r.module }}">{{ r.module }}</span></td>
+            <td>{{ r.target }}</td>
+            <td style="color:var(--dim)">{{ r.created_at[:16] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p style="color:var(--dim);font-size:12px">No results yet. Run a scan from the Recon tab.</p>
+    {% endif %}
+  </div>
+
+  <!-- Flags + Workspace info -->
+  <div>
+    <div class="card">
+      <div class="card-title">Captured Flags</div>
+      {% if flags %}
+        {% for f in flags %}
+        <div style="margin-bottom:8px">
+          <div class="flag-value">{{ f.flag }}</div>
+          {% if f.description %}
+          <div style="font-size:11px;color:var(--dim);margin-top:2px">{{ f.description }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="color:var(--dim);font-size:12px">No flags yet.</p>
+      {% endif %}
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+      <div class="card-title" style="margin-bottom:8px">Add Flag</div>
+      <form method="POST" action="/workspace/flag" style="display:flex;flex-direction:column;gap:6px">
+        <input type="text" name="flag" placeholder="FLAG{...}">
+        <input type="text" name="description" placeholder="Description (optional)">
+        <button class="btn btn-primary" type="submit" style="align-self:flex-start;margin-top:4px">Save Flag</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Workspace Info</div>
+      <table>
+        <tr><td style="color:var(--dim)">Name</td><td>{{ workspace.name | default('—') }}</td></tr>
+        <tr><td style="color:var(--dim)">Target IP</td><td>{{ workspace.target_ip or '—' }}</td></tr>
+        <tr><td style="color:var(--dim)">Domain</td><td>{{ workspace.target_domain or '—' }}</td></tr>
+        <tr><td style="color:var(--dim)">Created</td><td>{{ (workspace.created_at or '')[:16] }}</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- New workspace -->
+<div class="card">
+  <div class="card-title">New Workspace</div>
+  <form method="POST" action="/workspace/new" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:140px">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="htb-machine" required>
+    </div>
+    <div style="flex:1;min-width:120px">
+      <label>Target IP</label>
+      <input type="text" name="target_ip" placeholder="10.10.10.5">
+    </div>
+    <div style="flex:1;min-width:140px">
+      <label>Domain</label>
+      <input type="text" name="target_domain" placeholder="target.htb">
+    </div>
+    <button class="btn btn-primary" type="submit">Create &amp; Switch</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Recon{% endblock %}
+{% block topbar_title %}Recon{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Port Scan</div>
+  <form
+    hx-post="/recon/scan"
+    hx-target="#scan-result"
+    hx-indicator="#scan-indicator"
+    style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"
+  >
+    <div style="flex:2;min-width:160px">
+      <label>Target IP / Hostname</label>
+      <input type="text" name="target" placeholder="10.10.10.5 or target.htb" required>
+    </div>
+    <div style="flex:1;min-width:120px">
+      <label>Ports</label>
+      <input type="text" name="ports" value="common" placeholder="common | all | 80,443">
+    </div>
+    <div>
+      <button class="btn btn-primary" type="submit">
+        ◎ Scan
+        <span class="htmx-indicator" id="scan-indicator">…</span>
+      </button>
+    </div>
+  </form>
+  <p style="font-size:11px;color:var(--dim);margin-top:8px">
+    Uses nmap if available, falls back to Python socket scan.
+    Results are automatically saved to the active workspace.
+  </p>
+</div>
+
+<div id="scan-result"></div>
+{% endblock %}
