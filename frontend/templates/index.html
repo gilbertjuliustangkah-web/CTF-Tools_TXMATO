@@ -3,103 +3,431 @@
 {% block topbar_title %}Dashboard — {{ active_ws }}{% endblock %}
 
 {% block content %}
-<div class="page-head">
-  <div>
-    <div class="crumb">Workspace / {{ active_ws }}</div>
-    <h2>Operation Dashboard</h2>
-  </div>
-</div>
+<style>
+  /* ── Clean 4-Card Overview Metric Strip (Replaces dummy charts) ── */
+  .metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .metric-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .metric-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .metric-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .metric-num {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .metric-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-<div class="grid-3 mb-16">
-  <div class="card stat-box">
-    <div class="stat-value">{{ results | length }}</div>
-    <div class="stat-label">Scan Results</div>
-  </div>
-  <div class="card stat-box">
-    <div class="stat-value">{{ flags | length }}</div>
-    <div class="stat-label">Flags Captured</div>
-  </div>
-  <div class="card stat-box">
-    <div class="stat-value c-green">
-      {% if workspace.target_ip %}{{ workspace.target_ip }}{% else %}—{% endif %}
+  /* Scan Table Filter Pills */
+  .scan-filter-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .scan-pill {
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--dim);
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .scan-pill:hover {
+    color: var(--text);
+    border-color: var(--accent);
+  }
+  .scan-pill.active {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+  }
+
+  /* ── Dark Target Machine Card ── */
+  .target-card-dark {
+    background: #191a1e;
+    border: 1px solid #282a32;
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(25, 26, 30, 0.2);
+    margin-bottom: 20px;
+  }
+  .target-card-dark .target-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .target-card-dark .target-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .target-card-dark .target-desc {
+    font-size: 12px;
+    color: #9fa2b0;
+    margin-bottom: 14px;
+  }
+  .target-details-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #282a32;
+  }
+  .target-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .target-detail-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #7b7d8c;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .target-detail-value {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #ffffff;
+    word-break: break-all;
+  }
+
+  /* Quick launch buttons */
+  .quick-launcher-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .quick-launcher-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .quick-launcher-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent);
+  }
+  .quick-launcher-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+  }
+</style>
+
+<!-- ── 4-CARD CTF METRIC STRIP ── -->
+<div class="metrics-strip">
+  <!-- Card 1: Target IP -->
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-label">Target Machine</span>
+      <span class="badge {% if workspace.target_ip %}badge-open{% else %}badge-na{% endif %}">
+        {% if workspace.target_ip %}Active{% else %}Standby{% endif %}
+      </span>
     </div>
-    <div class="stat-label">Target IP</div>
+    <div class="metric-value-row">
+      <span class="metric-num" style="font-size:19px; font-family:var(--font-mono);">
+        {{ workspace.target_ip or 'No IP' }}
+      </span>
+      {% if workspace.target_ip %}
+      <button class="btn btn-mini btn-ghost" onclick="copyText('{{ workspace.target_ip }}', 'Target IP')" title="Copy IP">
+        Copy
+      </button>
+      {% endif %}
+    </div>
+    <div class="metric-sub">
+      Domain: {{ workspace.target_domain or 'None configured' }}
+    </div>
+  </div>
+
+  <!-- Card 2: Scan Results -->
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-label">Recorded Scans</span>
+      <span class="badge badge-recon">Telemetry</span>
+    </div>
+    <div class="metric-value-row">
+      <span class="metric-num">{{ results | length }}</span>
+      <a href="#recent-scans" class="f-11 c-dim ml-6" style="text-decoration:none; font-weight:600;">View table ↓</a>
+    </div>
+    <div class="metric-sub">
+      Across Recon, Web, and Crypto
+    </div>
+  </div>
+
+  <!-- Card 3: Flags Captured -->
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-label">Flags Captured</span>
+      <span class="badge badge-open">Objectives</span>
+    </div>
+    <div class="metric-value-row">
+      <span class="metric-num">{{ flags | length }}</span>
+      <button class="btn btn-mini btn-ghost ml-6" onclick="openModal('flag')">+ Add</button>
+    </div>
+    <div class="metric-sub">
+      Target objectives submitted
+    </div>
+  </div>
+
+  <!-- Card 4: Active Workspace -->
+  <div class="metric-card">
+    <div class="metric-head">
+      <span class="metric-label">Workspace</span>
+      <button class="btn btn-mini btn-ghost" onclick="openModal('switch')">Switch</button>
+    </div>
+    <div class="metric-value-row">
+      <span class="metric-num" style="font-size:18px;">{{ active_ws }}</span>
+    </div>
+    <div class="metric-sub">
+      Session: {{ (workspace.created_at or '')[:10] or 'Default' }}
+    </div>
   </div>
 </div>
 
-<div class="grid-2">
-  <!-- Recent results -->
+<!-- ── QUICK LAUNCHER BUTTONS ── -->
+<div class="quick-launcher-grid">
+  <a href="/recon/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+    </div>
+    <span>Recon Scan</span>
+  </a>
+  <a href="/web/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+    </div>
+    <span>Web Enum</span>
+  </a>
+  <a href="/crypto/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+    </div>
+    <span>Crypto Tools</span>
+  </a>
+  <a href="/forensic/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </div>
+    <span>Forensic Inspect</span>
+  </a>
+  <a href="/reverse/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+    </div>
+    <span>Reverse Disasm</span>
+  </a>
+  <a href="/pwn/" class="quick-launcher-btn">
+    <div class="quick-launcher-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+    </div>
+    <span>Pwn &amp; ROP</span>
+  </a>
+</div>
+
+<!-- ── SIGNATURE DARK HIGHLIGHT CARD: ACTIVE TARGET ── -->
+<div class="target-card-dark">
+  <div class="target-top">
+    <span class="target-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+      Active Engagement: {{ active_ws }}
+    </span>
+    <button class="btn btn-tiny" onclick="openModal('switch')" style="background:#282a32; color:#fff; border:1px solid #3d404d;">
+      Switch Target
+    </button>
+  </div>
+  <div class="target-desc">
+    Target infrastructure configured for the current engagement workspace. All module results and captured flags are scoped to this target.
+  </div>
+  <div class="target-details-grid">
+    <div class="target-detail-item">
+      <span class="target-detail-label">Target IP</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="target-detail-value">{{ workspace.target_ip or '— (Set in workspace)' }}</span>
+        {% if workspace.target_ip %}
+        <button class="btn btn-mini btn-ghost" onclick="copyText('{{ workspace.target_ip }}', 'Target IP')" style="background:rgba(255,255,255,0.12); color:#fff; border:none; padding:2px 7px;">Copy</button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="target-detail-item">
+      <span class="target-detail-label">Domain</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="target-detail-value">{{ workspace.target_domain or '—' }}</span>
+        {% if workspace.target_domain %}
+        <button class="btn btn-mini btn-ghost" onclick="copyText('{{ workspace.target_domain }}', 'Domain')" style="background:rgba(255,255,255,0.12); color:#fff; border:none; padding:2px 7px;">Copy</button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="target-detail-item">
+      <span class="target-detail-label">Session Created</span>
+      <span class="target-detail-value">{{ (workspace.created_at or '')[:16] or 'Current Session' }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCAN RESULTS & CAPTURED FLAGS GRID ── -->
+<div class="grid-2 mb-16" id="recent-scans">
+  <!-- Recent Scan Results -->
   <div class="card">
-    <div class="card-title">Recent Scan Results</div>
+    <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>Recent Scan Results</span>
+      <span class="badge badge-misc" id="scans-count-badge">{{ results | length }} results</span>
+    </div>
+
+    <!-- Live Category Filter Pills -->
+    <div class="scan-filter-pills">
+      <button class="scan-pill active" onclick="filterScanRows('all', this)">All</button>
+      <button class="scan-pill" onclick="filterScanRows('recon', this)">Recon</button>
+      <button class="scan-pill" onclick="filterScanRows('web', this)">Web</button>
+      <button class="scan-pill" onclick="filterScanRows('crypto', this)">Crypto</button>
+      <button class="scan-pill" onclick="filterScanRows('forensic', this)">Forensic</button>
+      <button class="scan-pill" onclick="filterScanRows('pwn', this)">Pwn</button>
+    </div>
+
     {% if results %}
       <table>
         <thead>
           <tr>
             <th>Module</th>
             <th>Target</th>
-            <th>Time</th>
+            <th>Timestamp</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="scan-table-body">
           {% for r in results %}
-          <tr>
+          <tr data-module="{{ r.module }}">
             <td><span class="badge badge-{{ r.module }}">{{ r.module }}</span></td>
-            <td>{{ r.target }}</td>
-            <td class="c-dim">{{ r.created_at[:16] }}</td>
+            <td style="font-family:var(--font-mono); font-weight:500;">
+              <span>{{ r.target }}</span>
+              <button class="btn btn-mini btn-ghost ml-6" onclick="copyText('{{ r.target }}', 'Target')" title="Copy Target" style="padding:1px 5px; font-size:10px;">📋</button>
+            </td>
+            <td class="c-dim" style="font-size:11px;">{{ r.created_at[:16] }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p class="c-dim f-12">No results yet. Run a scan from the Recon tab.</p>
+      <p class="c-dim f-12" style="padding: 12px 0;">No scan results recorded yet. Run a scan from the Recon or Web tab.</p>
     {% endif %}
   </div>
 
-  <!-- Flags + Workspace info -->
+  <!-- Flags & Submission -->
   <div>
     <div class="card">
-      <div class="card-title">Captured Flags</div>
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Captured Flags</span>
+        <span class="badge badge-open">{{ flags | length }} flags</span>
+      </div>
       {% if flags %}
-        {% for f in flags %}
-        <div class="mb-8">
-          <div class="flag-value">{{ f.flag }}</div>
-          {% if f.description %}
-          <div class="f-11 c-dim mt-2">{{ f.description }}</div>
-          {% endif %}
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+          {% for f in flags %}
+          <div style="background:var(--surface-subtle); border:1px solid var(--border-light); border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <div style="min-width:0;">
+              <div class="flag-value">{{ f.flag }}</div>
+              {% if f.description %}
+              <div class="f-11 c-dim mt-4">{{ f.description }}</div>
+              {% endif %}
+            </div>
+            <button class="btn btn-mini btn-ghost" onclick="copyText('{{ f.flag }}', 'Flag')" title="Copy Flag to Clipboard">
+              Copy
+            </button>
+          </div>
+          {% endfor %}
         </div>
-        {% endfor %}
       {% else %}
-        <p class="c-dim f-12">No flags yet.</p>
+        <p class="c-dim f-12 mb-12">No flags submitted yet for this workspace.</p>
       {% endif %}
 
       <hr class="hr-thin">
-      <div class="card-title mb-8">Add Flag</div>
+      <div class="card-title mb-8" style="font-size:11px;">Add Flag to {{ active_ws }}</div>
       <form class="flex-col-6" method="POST" action="/workspace/flag">
-        <input type="text" name="flag" placeholder="FLAG{...}">
-        <input type="text" name="description" placeholder="Description (optional)">
-        <button class="btn btn-primary self-start mt-4" type="submit">Save Flag</button>
+        <input type="text" name="flag" placeholder="FLAG{...}" required>
+        <input type="text" name="description" placeholder="Description / challenge name (optional)">
+        <button class="btn btn-primary self-start mt-4" type="submit">+ Save Flag</button>
       </form>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Workspace Info</div>
-      <table>
-        <tr><td class="c-dim">Name</td><td>{{ workspace.name | default('—') }}</td></tr>
-        <tr><td class="c-dim">Target IP</td><td>{{ workspace.target_ip or '—' }}</td></tr>
-        <tr><td class="c-dim">Domain</td><td>{{ workspace.target_domain or '—' }}</td></tr>
-        <tr><td class="c-dim">Created</td><td>{{ (workspace.created_at or '')[:16] }}</td></tr>
-      </table>
     </div>
   </div>
 </div>
 
-<!-- New workspace -->
+<!-- ── NEW WORKSPACE FORM ── -->
 <div class="card">
-  <div class="card-title">New Workspace</div>
+  <div class="card-title">Create New Target Workspace</div>
   <form class="form-row-10" method="POST" action="/workspace/new">
     <div class="grow-140">
-      <label>Name</label>
-      <input type="text" name="name" placeholder="htb-machine" required>
+      <label>Workspace Name</label>
+      <input type="text" name="name" placeholder="e.g. htb-machine" required>
     </div>
     <div class="grow-120">
       <label>Target IP</label>
@@ -112,4 +440,26 @@
     <button class="btn btn-primary" type="submit">Create &amp; Switch</button>
   </form>
 </div>
+
+<script>
+  /* ── Interactive Category Filtering for Recent Scans ── */
+  function filterScanRows(mod, btn) {
+    document.querySelectorAll('.scan-pill').forEach(function(p) { p.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    
+    var count = 0;
+    var rows = document.querySelectorAll('#scan-table-body tr');
+    rows.forEach(function(row) {
+      var rowMod = (row.getAttribute('data-module') || '').toLowerCase();
+      if (mod === 'all' || rowMod === mod.toLowerCase()) {
+        row.style.display = '';
+        count++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+    var badge = document.getElementById('scans-count-badge');
+    if (badge) badge.textContent = count + ' visible';
+  }
+</script>
 {% endblock %}
