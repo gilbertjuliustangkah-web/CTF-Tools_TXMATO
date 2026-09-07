@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Python{% endblock %}
+{% block topbar_title %}Python — Code Runner{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumb">Operations / Python</div>
+    <h2>Python Box</h2>
+  </div>
+</div>
+
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">Python 3 — write &amp; run</div>
+  <form class="flex-col-6" hx-post="/python/run" hx-target="#py-result" hx-indicator="#py-indicator">
+    <label for="py-code">Code</label>
+    <textarea id="py-code" class="resize-v mono-block" name="code" rows="14" spellcheck="false"
+              placeholder="# write Python 3 here&#10;print('hello from the python box')"></textarea>
+    <div class="grid-2-cols">
+      <div>
+        <label for="py-stdin">Standard input (optional)</label>
+        <textarea id="py-stdin" class="resize-v" name="stdin" rows="3" spellcheck="false"
+                  placeholder="piped to sys.stdin"></textarea>
+      </div>
+      <div>
+        <label for="py-timeout">Timeout (s)</label>
+        <input id="py-timeout" type="number" name="timeout" value="30" min="1" max="300">
+      </div>
+    </div>
+    <button class="btn btn-primary self-start" type="submit">
+      ▶ Run
+      <span class="htmx-indicator" id="py-indicator">…</span>
+    </button>
+  </form>
+  <p class="f-11 c-dim mt-8">
+    Runs in a fresh interpreter from the active workspace directory (cwd = workspace/<strong>{{ active_ws }}</strong>).
+    stdout + stderr are merged, output capped by the timeout. Each run is saved to the database with a "Run again" button.
+  </p>
+</div>
+
+<div id="py-result"></div>
+{% endblock %}

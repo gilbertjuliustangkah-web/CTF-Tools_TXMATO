@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Stego{% endblock %}
+{% block topbar_title %}Steganography Detection{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Upload &amp; Analyze Image</div>
+  <form class="form-row-10"
+    hx-post="/stego/upload"
+    hx-target="#stego-result"
+    hx-indicator="#stego-indicator"
+    hx-encoding="multipart/form-data"
+  >
+    <div class="grow-220">
+      <label>Image file (PNG, JPEG, GIF, BMP, WAV)</label>
+      <input type="file" name="file" required>
+    </div>
+    <button class="btn btn-primary" type="submit">
+      ▣ Detect Stego
+      <span class="htmx-indicator" id="stego-indicator">…</span>
+    </button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">Analyze by Path</div>
+  <form class="form-row-10-nowrap" hx-post="/stego/detect" hx-target="#stego-result" hx-indicator="#stego-indicator">
+    <div class="grow">
+      <label>File Path (relative to workspace)</label>
+      <input type="text" name="filepath" placeholder="image.png" required>
+    </div>
+    <button class="btn btn-ghost" type="submit">▣ Detect</button>
+  </form>
+</div>
+
+<div id="stego-result"></div>
+{% endblock %}

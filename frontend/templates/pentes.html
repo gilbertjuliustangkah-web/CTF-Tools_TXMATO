@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}PenTest{% endblock %}
+{% block topbar_title %}PenTest — Active Testing{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumb">Operations / PenTest</div>
+    <h2>Penetration Testing</h2>
+  </div>
+</div>
+
+<div class="card bc-green">
+  <div class="card-title c-green">Authorized Use Only</div>
+  <p class="f-12 c-dim">
+    These tools run <strong>active</strong> network and web requests against the target. Only use them on systems you own
+    or are explicitly authorized to test (e.g. your CTF lab, HackTheBox / TryHackMe boxes). Brute-force attempts are
+    rate-limited and require explicit acknowledgment.
+  </p>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Subdomain Enumeration</div>
+    <form class="form-row" hx-post="/pentes/subdomains" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <div class="grow-180">
+        <label>Domain</label>
+        <input type="text" name="domain" placeholder="example.com" required>
+      </div>
+      <div class="grow-160">
+        <label>Wordlist (optional, in workspace)</label>
+        <input type="text" name="wordlist" placeholder="subdomains.txt">
+      </div>
+      <button class="btn btn-primary" type="submit">
+        ⚔ Enumerate
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">DNS brute-force for subdomains. Uses sublist3r if installed, else built-in resolver.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Service Probing</div>
+    <form class="form-row" hx-post="/pentes/probe" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <div class="grow-180">
+        <label>Target</label>
+        <input type="text" name="target" placeholder="10.10.10.5" required>
+      </div>
+      <select name="ports" class="flex-none" aria-label="Ports to probe">
+        <option value="common">Common ports</option>
+        <option value="all">All ports</option>
+      </select>
+      <button class="btn btn-primary" type="submit">
+        ⚔ Probe
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">Service + version fingerprinting. Uses nmap -sV if installed, else banner grabbing.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Directory Brute-Forcing</div>
+    <form class="form-row" hx-post="/pentes/dir" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <div class="grow-180">
+        <label>Base URL</label>
+        <input type="text" name="url" placeholder="https://target.com" required>
+      </div>
+      <div class="grow-160">
+        <label>Wordlist (optional, in workspace)</label>
+        <input type="text" name="wordlist" placeholder="common.txt">
+      </div>
+      <button class="btn btn-primary" type="submit">
+        ⚔ Scan
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">Discover web paths. Uses ffuf / gobuster if installed, else a built-in HTTP scanner.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">SQL Injection Scan</div>
+    <form class="form-row" hx-post="/pentes/sqli" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <div class="grow-180">
+        <label>URL (with query param)</label>
+        <input type="text" name="url" placeholder="http://target/product?id=1" required>
+      </div>
+      <button class="btn btn-primary" type="submit">
+        ⚔ Scan
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">Sends benign SQL probes into the last query parameter and flags DB error signatures / 500s.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Reflected XSS Scan</div>
+    <form class="form-row" hx-post="/pentes/xss" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <div class="grow-180">
+        <label>URL (with query param)</label>
+        <input type="text" name="url" placeholder="http://target/search?q=test" required>
+      </div>
+      <button class="btn btn-primary" type="submit">
+        ⚔ Scan
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">Checks whether markers reflect unencoded (XSS-prone) and whether CSP / X-Content-Type-Options are missing.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Auth Brute-Force</div>
+    <form class="flex-col-6" hx-post="/pentes/auth" hx-target="#pentes-result" hx-indicator="#pentes-indicator">
+      <label for="auth-target-url">Target URL</label>
+      <input id="auth-target-url" type="text" name="url" placeholder="http://target.com/login" required>
+      <div class="grid-2-cols">
+        <div>
+          <label for="auth-mode">Mode</label>
+          <select id="auth-mode" name="mode">
+            <option value="basic">HTTP Basic</option>
+            <option value="json">JSON form login</option>
+          </select>
+        </div>
+        <div>
+          <label for="auth-delay">Delay (s)</label>
+          <input id="auth-delay" type="number" name="delay" value="0.35" min="0.05" max="5" step="0.05">
+        </div>
+      </div>
+      <label>Usernames (one per line)</label>
+      <textarea class="resize-v" name="usernames" rows="2" placeholder="admin&#10;root"></textarea>
+      <label>Passwords (one per line)</label>
+      <textarea class="resize-v" name="passwords" rows="3" placeholder="password&#10;admin&#10;123456"></textarea>
+      <label class="checkline">
+        <input type="checkbox" name="acknowledge" value="true" class="inline-block">
+        <span class="inline-block c-yellow">I confirm this target is authorized for testing</span>
+      </label>
+      <button class="btn btn-danger self-start" type="submit">
+        ⚔ Brute-Force
+        <span class="htmx-indicator" id="pentes-indicator">…</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<div id="pentes-result"></div>
+{% endblock %}

@@ -1,18 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Forensic{% endblock %}
-{% block topbar_title %}Forensic — File Inspector{% endblock %}
+{% block topbar_title %}Forensic — Analysis Tools{% endblock %}
 
 {% block content %}
 <div class="card">
   <div class="card-title">Upload &amp; Inspect</div>
-  <form
+  <form class="form-row-10"
     hx-post="/forensic/upload"
     hx-target="#forensic-result"
     hx-indicator="#forensic-indicator"
     hx-encoding="multipart/form-data"
-    style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"
   >
-    <div style="flex:1;min-width:200px">
+    <div class="grow-200">
       <label>Challenge file (saved into the active workspace)</label>
       <input type="file" name="file" required>
     </div>
@@ -23,27 +22,77 @@
   </form>
 </div>
 
-<div class="card">
-  <div class="card-title">Inspect by Path (workspace only)</div>
-  <form
-    hx-post="/forensic/inspect"
-    hx-target="#forensic-result"
-    hx-indicator="#forensic-indicator"
-    style="display:flex;gap:10px;align-items:flex-end"
-  >
-    <div style="flex:1">
-      <label>File Path (relative to the active workspace: <code>workspace/{{ active_ws }}/</code>)</label>
-      <input type="text" name="filepath" placeholder="challenge.zip" required>
-    </div>
-    <button class="btn btn-ghost" type="submit">
-      ⊘ Inspect
-      <span class="htmx-indicator" id="forensic-indicator">…</span>
-    </button>
-  </form>
-  <p style="font-size:11px;color:var(--dim);margin-top:8px">
-    For safety, the web inspector only reads files inside the active workspace folder.
-    Use the CLI (<code>ctf forensic inspect &lt;path&gt;</code>) to inspect arbitrary files.
-  </p>
+<div class="grid-2 mb-16">
+  <div class="card">
+    <div class="card-title">Inspect by Path</div>
+    <form class="form-row-10-nowrap" hx-post="/forensic/inspect" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow">
+        <label>File path (relative to workspace)</label>
+        <input type="text" name="filepath" placeholder="challenge.zip" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Inspect</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-title">Strings Extraction</div>
+    <form class="form-row-10-nowrap" hx-post="/forensic/strings" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow">
+        <label>File path</label>
+        <input type="text" name="filepath" placeholder="binary" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Strings</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">File Hash Calculator</div>
+    <form class="form-row-10-nowrap" hx-post="/forensic/hash" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow">
+        <label>File path</label>
+        <input type="text" name="filepath" placeholder="file.bin" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Hash</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-title">Hex Dump</div>
+    <form class="form-row-6" hx-post="/forensic/hexdump" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow-2">
+        <label>File path</label>
+        <input type="text" name="filepath" placeholder="file" required>
+      </div>
+      <div class="grow-60">
+        <label>Length</label>
+        <input type="number" name="length" value="256">
+      </div>
+      <button class="btn btn-ghost" type="submit">Dump</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-2 mt-16">
+  <div class="card">
+    <div class="card-title">PDF Analysis</div>
+    <form class="form-row-10-nowrap" hx-post="/forensic/pdf" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow">
+        <label>PDF file path</label>
+        <input type="text" name="filepath" placeholder="doc.pdf" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Analyze</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-title">Binwalk Scan</div>
+    <form class="form-row-10-nowrap" hx-post="/forensic/binwalk" hx-target="#forensic-result" hx-indicator="#forensic-indicator">
+      <div class="grow">
+        <label>File path</label>
+        <input type="text" name="filepath" placeholder="firmware.bin" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Scan</button>
+    </form>
+  </div>
 </div>
 
 <div id="forensic-result"></div>

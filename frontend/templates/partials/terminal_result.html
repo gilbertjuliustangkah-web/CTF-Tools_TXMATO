@@ -1,0 +1,59 @@
+{% if status.available %}
+  {% if status.running %}
+    <span class="badge badge-open">● WSL session running</span>
+  {% else %}
+    <span class="badge badge-missing">○ WSL session stopped</span>
+  {% endif %}
+{% else %}
+  <span class="badge badge-missing">WSL not installed</span>
+{% endif %}
+
+{% if mode in ('start', 'stop') %}
+  {% if result and not result.ok %}
+    <div class="card bc-red"><p class="msg-error">{{ result.error }}</p></div>
+  {% elif mode == 'stop' %}
+    <div class="card bc-green"><p class="msg-success">WSL session stopped.</p></div>
+  {% endif %}
+{% endif %}
+
+{% if mode == 'run' %}
+<div class="card">
+  {% if result.ok %}
+    {% if result.timed_out %}
+      <p class="f-11 mb-8"><span class="badge badge-missing">timed out</span> command:
+        <span class="c-cyan">{{ result.command }}</span></p>
+    {% else %}
+      <p class="f-11 mb-8">exit code:
+        <span class="badge {{ 'badge-open' if result.exit_code == 0 else 'badge-missing' }}">{{ result.exit_code if result.exit_code is not none else 'n/a' }}</span>
+        · command: <span class="c-cyan">{{ result.command }}</span></p>
+    {% endif %}
+    {% if result.output %}
+      <div class="mono-block">{{ result.output }}</div>
+    {% else %}
+      <p class="c-dim f-12">(no output)</p>
+    {% endif %}
+  {% else %}
+    <p class="msg-error">{{ result.error }}</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if history %}
+<div class="card">
+  <div class="card-title">Saved commands (workspace database)</div>
+  {% for h in history %}
+    <details class="tool-log mb-8">
+      <summary><span class="c-cyan">{{ h.command }}</span> ·
+        <span class="c-dim">{{ h.created_at }}</span> ·
+        <span class="{{ 'c-green' if h.exit_code == 0 else 'c-dim' }}">rc={{ h.exit_code if h.exit_code is not none else '?' }}</span></summary>
+      {% if h.output %}
+        <div class="mono-block maxh-200">{{ h.output }}</div>
+      {% endif %}
+      <form class="mt-8" hx-post="/web/terminal/run" hx-target="#term-result" hx-swap="innerHTML">
+        <input type="hidden" name="command" value="{{ h.command }}">
+        <button class="btn btn-ghost btn-tiny" type="submit">Run again</button>
+      </form>
+    </details>
+  {% endfor %}
+</div>
+{% endif %}

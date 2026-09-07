@@ -1,0 +1,158 @@
+{% if result.success %}
+{% set d = result.data %}
+
+{% if tab == "headers" %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">HTTP Response</div>
+  <table class="mb-12">
+    <tr><td class="c-dim w-120">URL</td><td>{{ d.url }}</td></tr>
+    <tr><td class="c-dim">Status</td>
+      <td><span class="badge {{ 'badge-missing' if d.status >= 400 else 'badge-installed' }}">{{ d.status }}</span></td></tr>
+    <tr><td class="c-dim">Redirects</td><td>{{ d.redirections }}</td></tr>
+    <tr><td class="c-dim">Body size</td><td>{{ d.body_size }} bytes</td></tr>
+    {% if d.server %}<tr><td class="c-dim">Server</td><td>{{ d.server }}</td></tr>{% endif %}
+    {% if d.cookies %}
+      <tr><td class="c-dim">Cookies</td>
+        <td>{% for c in d.cookies %}<span class="badge badge-src">{{ c }}</span> {% endfor %}</td></tr>
+    {% endif %}
+  </table>
+  <div class="f-11 c-dim mb-4">Response headers</div>
+  <div class="mono-block f-11">
+    {% for k, v in d.headers %}
+      <span class="c-cyan">{{ k }}:</span> {{ v }}
+<br>{% endfor %}
+  </div>
+</div>
+
+{% elif tab == "robots" %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">robots.txt — {{ d.url }}</div>
+  {% for agent, allows, disallows, other in d.entries %}
+    <div class="f-11 c-dim mb-4">
+      User-agent: <span class="badge badge-src">{{ agent }}</span>
+    </div>
+    <div class="mono-block f-11">
+      {% for p in allows %}
+        <span class="c-green">✓ Allow:</span> {{ p }}
+<br>{% endfor %}
+      {% for p in disallows %}
+        <span class="c-red">✗ Disallow:</span> {{ p }}
+<br>{% endfor %}
+      {% for line in other %}{{ line }}
+<br>{% endfor %}
+    </div>
+  {% endfor %}
+  {% if d.sitemaps %}
+    <div class="f-11 c-dim my-10-4">Sitemaps</div>
+    <div class="mono-block f-11">{% for s in d.sitemaps %}{{ s }}
+<br>{% endfor %}</div>
+  {% endif %}
+  {% if d.interesting_paths %}
+    <div class="f-11 c-dim my-10-4">Interesting paths</div>
+    <div class="mono-block f-11 c-yellow">
+      {% for p in d.interesting_paths %}<span class="badge badge-osint">{{ p }}</span>{% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+{% elif tab == "jwt" %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">JWT Decode</div>
+  <div class="f-12 c-dim mb-10">
+    Token: <span class="mono-block inline f-10">{{ d.raw_token }}</span>
+  </div>
+  {% if d.get('warnings') %}
+    <div class="mb-10">
+      {% for w in d.warnings %}
+        <div class="tag-box c-red">{{ w }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div class="grid-2-cols">
+    <div>
+      <div class="f-11 c-dim mb-4">Header</div>
+      <div class="mono-block f-11">{{ d.header | tojson(indent=2) }}</div>
+    </div>
+    <div>
+      <div class="f-11 c-dim mb-4">Payload</div>
+      <div class="mono-block f-11 c-green">{{ d.payload | tojson(indent=2) }}</div>
+    </div>
+  </div>
+  {% if d.signature %}
+    <div class="f-11 c-dim my-10-4">Signature (truncated)</div>
+    <div class="mono-block f-10">{{ d.signature[:60] }}...</div>
+  {% endif %}
+</div>
+
+{% elif tab == "cookies" %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">Cookie Inspector — {{ d.count }} cookies</div>
+  <table>
+    <thead><tr><th>Name</th><th>Value</th><th>Flags</th></tr></thead>
+    <tbody>
+    {% for c in d.cookies %}
+      <tr>
+        <td class="c-yellow">{{ c.name }}</td>
+        <td class="break-all">{{ c.value[:60] }}</td>
+        <td>
+          {% if c.secure %}<span class="badge badge-installed">Secure</span>{% endif %}
+          {% if c.httponly %}<span class="badge badge-recon">HttpOnly</span>{% endif %}
+          {% if not c.secure and not c.httponly %}<span class="badge badge-missing">No flags</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if d.get('security_notes') %}
+    <div class="mt-10">
+      {% for n in d.security_notes %}
+        <div class="c-red f-11 p-3">! {{ n }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+{% elif tab == "dir" %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">Directory Enumeration — {{ d.url }}</div>
+  <div class="f-11 c-dim mb-8">
+    Method: {{ d.get('method','?') }} · checked {{ d.get('total_checked','?') }} → found {{ d.total_found }}
+  </div>
+  {% if d.found %}
+    <table>
+      <thead><tr><th>Status</th><th>Path</th></tr></thead>
+      <tbody>
+      {% for e in d.found %}
+        <tr>
+          <td>
+            {% if e.get('status') %}
+              {% set st = e.status %}
+              {% if st is string and st.isdigit() %}
+                <span class="badge {{ 'badge-installed' if st|int < 400 else 'badge-missing' }}">{{ st }}</span>
+              {% else %}
+                <span class="badge badge-src">{{ st }}</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td class="c-cyan">{{ e.path }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="c-dim f-12">No discoverable paths found with the built-in wordlist.</p>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">Result</div>
+  <pre class="out-box f-12 c-green">{{ d | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

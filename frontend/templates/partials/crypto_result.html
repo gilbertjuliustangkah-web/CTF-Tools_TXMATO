@@ -1,38 +1,131 @@
 {% if result.success %}
-<div class="card" style="border-color:var(--purple)">
-  <div class="card-title" style="color:var(--purple)">Result — {{ mode }}</div>
-
+<div class="card bc-purple">
   {% set d = result.data %}
 
-  {% if 'result' in d %}
+  {% if 'mode' in d and d.get('mode') == 'encrypt' %}
+    <div class="card-title c-purple">XOR Encrypt</div>
+    <div class="mono-block">Hex: {{ d.result_hex }}</div>
+    <div class="mono-block mt-8">Base64: {{ d.result_b64 }}</div>
+
+  {% elif 'candidates' in d %}
+    <div class="card-title c-purple">Hash Identification</div>
+    <table class="mb-8">
+      <tr><td class="c-dim w-120">Hash (truncated)</td><td>{{ d.hash[:40] }}{% if d.hash|length > 40 %}...{% endif %}</td></tr>
+      <tr><td class="c-dim">Length</td><td>{{ d.length }}</td></tr>
+      <tr><td class="c-dim">Is hex</td><td>{{ "Yes" if d.is_hex else "No" }}</td></tr>
+    </table>
+    <div class="c-green mb-8">
+      Likely types: {% for c in d.candidates %}<span class="badge badge-crypto mr-4">{{ c }}</span>{% endfor %}
+    </div>
+
+  {% elif 'results' in d and d.get('best_shift') is not none %}
+    <div class="card-title c-purple">Caesar Brute Force</div>
+    <p class="f-12 c-dim mb-8">
+      Best shift: <b class="c-green">{{ d.best_shift }}</b>
+    </p>
+    {% if d.get('best_text') %}
+      <div class="mono-block bc-green c-green">{{ d.best_text }}</div>
+    {% endif %}
+    <details class="mt-10">
+      <summary class="ghost-summary">All {{ d.total_shifts }} shifts</summary>
+      <div class="mono-block mt-6 f-11 maxh-400">
+        {% for r in d.results[:15] %}
+          <span class="c-yellow">[{{ r.shift }}]</span> {{ r.text }}
+<br>{% endfor %}
+      </div>
+    </details>
+
+  {% elif 'result_text' in d or 'result_hex' in d %}
+    {% if 'best_key' in d %}
+      <div class="card-title c-purple">Single-Byte XOR Crack</div>
+      <table class="mb-8">
+        <tr><td class="c-dim w-120">Best key</td><td class="mono-block inline">{{ d.best_key }} ({{ d.best_key_hex }})</td></tr>
+      </table>
+      <div class="mono-block bc-green">{{ d.best_text }}</div>
+    {% else %}
+      <div class="card-title c-purple">XOR Result</div>
+      {% if d.get('result_text') %}
+        <div class="mono-block bc-green">{{ d.result_text }}</div>
+      {% endif %}
+      {% if d.get('result_hex') %}
+        <div class="mono-block mt-8 f-11">{{ d.result_hex[:80] }}</div>
+      {% endif %}
+    {% endif %}
+
+  {% elif 'frequency' in d %}
+    <div class="card-title c-purple">Frequency Analysis</div>
+    <table class="mb-12">
+      <tr><td class="c-dim w-130">Letters</td><td>{{ d.letter_count }} total, {{ d.unique_letters }} unique</td></tr>
+      <tr><td class="c-dim">Likely Caesar shift</td><td class="c-yellow">{{ d.likely_caesar_shift }}</td></tr>
+      <tr><td class="c-dim">Chi-squared</td><td>{{ d.chi_squared }} <span class="c-dim f-11">(lower = more English-like)</span></td></tr>
+    </table>
+    <div class="f-11 c-dim mb-4">Letter frequency vs English</div>
+    <div class="mono-block f-11 maxh-250">
+      {% for ch in 'etaoinshrdlucmfwypvbgkjqxz' %}
+        {% set pct = d.frequency.get(ch, 0) %}
+        <span class="inline-block mr-6 mb-2">
+          <span class="c-yellow w-12 inline-block">{{ ch }}</span>{{ pct }}%
+        </span>
+        <span class="c-accent f-9">{{ d.english_comparison is defined and loop.index0 < 5 and '★' or '' }}</span>
+      {% endfor %}
+    </div>
+
+  {% elif 'key_bits' in d %}
+    <div class="card-title c-purple">RSA Key Analysis</div>
+    <table class="mb-8">
+      {% for field in ['key_bits', 'e', 'n', 'd', 'p', 'q', 'is_public_only'] %}
+        {% if d[field] is not none %}
+          <tr>
+            <td class="c-dim w-130">{{ field }}</td>
+            <td class="break-all">{{ d[field] }}</td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </table>
+    {% if d.get('vulnerabilities') %}
+      <div class="f-11 c-red mb-4">Vulnerabilities:</div>
+      {% for v in d.vulnerabilities %}
+        <div class="tag-box c-red">! {{ v }}</div>
+      {% endfor %}
+    {% else %}
+      <p class="msg-success">No obvious vulnerabilities detected.</p>
+    {% endif %}
+
+  {% elif 'result' in d %}
+    <div class="card-title c-purple">Encode/Decode — {{ d.get('mode','') }}</div>
     <div class="mono-block">{{ d.result }}</div>
 
   {% elif 'detections' in d %}
+    <div class="card-title c-purple">Auto-detect Result</div>
     {% set det = d.detections %}
     {% if not det %}
-      <p style="color:var(--dim);font-size:12px">No encoding detected.</p>
+      <p class="c-dim f-12">No encoding detected.</p>
     {% else %}
       {% for enc, val in det.items() %}
         {% if enc == 'hash_hints' %}
           {% if val %}
-          <p style="font-size:12px;margin-bottom:8px">
-            <span style="color:var(--dim)">Hash hints:</span>
-            <span style="color:var(--yellow)">{{ val | join(', ') }}</span>
+          <p class="f-12 mb-8">
+            <span class="c-dim">Hash hints:</span>
+            <span class="c-yellow">{{ val | join(', ') }}</span>
           </p>
           {% endif %}
         {% else %}
-          <div style="margin-bottom:12px">
-            <div style="font-size:11px;color:var(--dim);margin-bottom:4px">{{ enc }}</div>
+          <div class="mb-12">
+            <div class="f-11 c-dim mb-4">{{ enc }}</div>
             <div class="mono-block">{{ val }}</div>
           </div>
         {% endif %}
       {% endfor %}
     {% endif %}
+
+  {% else %}
+    <div class="card-title c-purple">Result</div>
+    <div class="mono-block">{{ d }}</div>
   {% endif %}
 </div>
 {% else %}
-<div class="card" style="border-color:var(--red)">
-  <div class="card-title" style="color:var(--red)">Error</div>
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
   <p class="msg-error">{{ result.error }}</p>
 </div>
 {% endif %}

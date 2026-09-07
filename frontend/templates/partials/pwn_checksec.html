@@ -1,0 +1,80 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">Checksec — {{ d.path }}</div>
+
+  <table class="mb-12">
+    <tr><td class="c-dim w-130">File</td><td>{{ d.class }} · {{ d.type }} · {{ d.machine }}</td></tr>
+    <tr><td class="c-dim">Entry</td><td class="mono-block inline">{{ d.entry }}</td></tr>
+    <tr>
+      <td class="c-dim">PIE</td>
+      <td>
+        {% if 'PIE enabled' in d.pie %}
+          <span class="badge badge-stego">✓ {{ d.pie }}</span>
+        {% elif d.pie.startswith('No') %}
+          <span class="badge badge-missing">✗ {{ d.pie }}</span>
+        {% else %}
+          <span class="badge badge-src">{{ d.pie }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="c-dim">NX</td>
+      <td>
+        {% if 'Disabled' in d.nx %}
+          <span class="badge badge-missing">✗ {{ d.nx }}</span>
+        {% else %}
+          <span class="badge badge-stego">✓ {{ d.nx }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="c-dim">RELRO</td>
+      <td>
+        {% if d.relro == 'FULL' %}
+          <span class="badge badge-stego">✓ {{ d.relro }}</span>
+        {% elif d.relro == 'PARTIAL' %}
+          <span class="badge badge-osint">◐ {{ d.relro }}</span>
+        {% else %}
+          <span class="badge badge-missing">✗ {{ d.relro }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="c-dim">Stack canary</td>
+      <td>
+        {% if d.canary == 'No' %}
+          <span class="badge badge-missing">✗ none</span>
+        {% else %}
+          <span class="badge badge-stego">✓ enabled</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td class="c-dim">FORTIFY</td>
+      <td>
+        {% if d.fortify == 'No' %}
+          <span class="badge badge-missing">✗ none</span>
+        {% else %}
+          <span class="badge badge-stego">✓ enabled</span>
+        {% endif %}
+      </td>
+    </tr>
+    <tr><td class="c-dim">RPATH/RUNPATH</td>
+      <td>{{ d.rpath }} {% if d.rpath == 'Yes' %}<span class="c-red f-11">← hijackable via RPATH</span>{% endif %}</td></tr>
+    <tr><td class="c-dim">Stripped</td><td>{{ 'yes' if d.stripped else 'no' }}</td></tr>
+  </table>
+
+  {% if d.advice %}
+    <div class="f-11 c-dim mb-4">Exploitation notes</div>
+    <ul class="m-0 pl-18 f-12">
+      {% for a in d.advice %}<li class="c-yellow">{{ a }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

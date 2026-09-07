@@ -1,0 +1,46 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-cyan">
+  <div class="card-title c-cyan">ROP Gadget Search — {{ d.target }}</div>
+  <div class="f-11 c-dim mb-8">
+    Method: {{ d.get('method','?') }} · found {{ d.total_found }} gadgets
+    {% if d.get('search_term') %} · filter: "{{ d.search_term }}"{% endif %}
+  </div>
+
+  {% if d.get('useful') %}
+    <div class="mb-10">
+      <div class="f-11 c-green mb-4">★ Interesting gadgets</div>
+      {% for name, addrs in d.useful.items() %}
+        {% if addrs %}
+          <span class="badge badge-installed">{{ name }}</span>
+          <span class="f-10 c-text">{% for a in addrs[:5] %}{{ a }}{% if not loop.last %} · {% endif %}{% endfor %}</span>
+<br>{% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if d.gadgets %}
+    <table>
+      <thead><tr><th>Address</th><th>Gadget</th></tr></thead>
+      <tbody>
+      {% for g in d.gadgets %}
+        <tr>
+          <td class="mono-block inline">{{ g.address }}</td>
+          <td class="mono-block inline">{{ g.gadget }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="c-dim f-12">
+      No gadgets found{% if d.get('ropper_missing') %} — neither ropper nor ROPgadget installed{% endif %}.
+    </p>
+  {% endif %}
+  {% if d.get('note') %}<p class="f-11 c-yellow mt-8">{{ d.note }}</p>{% endif %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

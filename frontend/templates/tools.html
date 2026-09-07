@@ -11,10 +11,11 @@
   'recon':     'badge-recon',
   'stego':     'badge-stego',
   'osint':     'badge-osint',
+  'pentes':    'badge-pentes',
   'misc':      'badge-misc',
 } %}
 
-<div class="grid-3" style="margin-bottom:20px">
+<div class="grid-3 mb-20">
   <div class="card stat-box">
     <div class="stat-value">{{ summary.installed }}</div>
     <div class="stat-label">installed</div>
@@ -30,11 +31,11 @@
 </div>
 
 {% for group in groups %}
-<div class="card" style="padding:12px 20px">
-  <div class="card-title" style="margin-bottom:8px">
+<div class="card p-12-20">
+  <div class="card-title mb-8">
     {{ group.label }}
-    <span class="badge {{ badge_map.get(group.category, 'badge-misc') }}" style="margin-left:6px">{{ group.category }}</span>
-    <span style="color:var(--dim);float:right">
+    <span class="badge {{ badge_map.get(group.category, 'badge-misc') }} ml-6">{{ group.category }}</span>
+    <span class="c-dim float-right">
       {{ group.installed }}/{{ group.tools | length }}
     </span>
   </div>

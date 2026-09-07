@@ -1,0 +1,49 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-green">
+  <div class="card-title c-green">ExifTool Metadata — {{ d.filename }}</div>
+
+  {% if d.get('note') %}
+    <p class="f-12 c-yellow mb-8">{{ d.note }}</p>
+  {% endif %}
+
+  <div class="mb-12 row-12">
+    <span class="f-11 c-dim">Total tags: <b class="c-text">{{ d.total_tags }}</b></span>
+    <a class="f-12 c-accent" href="#" hx-post="/exiftool/export" hx-vals='{"filepath": "{{ d.path | replace('\\\\','/') }}", "format": "json"}' hx-swap="none">Export JSON</a>
+    <a class="f-12 c-accent" href="#" hx-post="/exiftool/export" hx-vals='{"filepath": "{{ d.path | replace('\\\\','/') }}", "format": "csv"}' hx-swap="none">Export CSV</a>
+  </div>
+
+  {% for group_name, tags in d.groups.items() %}
+  <details class="mb-8" {% if loop.first %}open{% endif %}>
+    <summary class="ptr f-12 c-cyan p-4-0">
+      {{ group_name }} ({{ tags | length }})
+    </summary>
+    <div class="pl-8">
+      <table>
+        <thead>
+          <tr><th>Tag</th><th>Value</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for tag in tags %}
+          <tr>
+            <td class="c-yellow nowrap">{{ tag.key }}</td>
+            <td class="break-all">{{ tag.value }}</td>
+            <td class="nowrap right">
+              <button type="button" class="btn btn-mini btn-ghost"
+                data-edit-tag="{{ tag.key }}" data-filepath="{{ d.path | replace('\\','/') }}"
+                title="Edit / delete this tag">✎</button>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

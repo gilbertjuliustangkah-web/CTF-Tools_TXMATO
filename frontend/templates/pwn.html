@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Pwn{% endblock %}
+{% block topbar_title %}Pwn — Exploit Dev{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Checksec (binary hardening)</div>
+    <form class="form-row-10" hx-post="/pwn/checksec" hx-target="#pwn-result" hx-indicator="#pwn-indicator">
+      <div class="grow-220">
+        <label>File Path</label>
+        <input type="text" name="filepath" placeholder="pwnme" required>
+      </div>
+      <button class="btn btn-primary" type="submit">
+        ◈ Checksec
+        <span class="htmx-indicator" id="pwn-indicator">…</span>
+      </button>
+    </form>
+    <p class="f-11 c-dim mt-8">
+      PIE, NX, RELRO, stack canary, FORTIFY, RPATH — with exploit advice.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Cyclic pattern</div>
+    <form class="form-row-10" hx-post="/pwn/cyclic" hx-target="#pwn-result" hx-indicator="#pwn-indicator">
+      <select class="flex-none" name="mode" id="cyclic-mode" onchange="toggleCyclicInputs()">
+        <option value="generate">Generate</option>
+        <option value="find">Find offset</option>
+      </select>
+      <input type="text" name="length" id="cyclic-length" placeholder="length" value="200">
+      <input class="hidden" type="text" name="pattern" id="cyclic-pattern" placeholder="pattern / 0x byte of crash">
+      <button class="btn btn-primary" type="submit">◈ Go</button>
+    </form>
+    <p class="f-11 c-dim mt-8">
+      De Bruijn offset pattern: send pwnme, crash, then "Find offset" with the EIP/RIP bytes.
+    </p>
+  </div>
+</div>
+
+<div id="pwn-result"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleCyclicInputs() {
+  var mode = document.getElementById("cyclic-mode").value;
+  var len = document.getElementById("cyclic-length");
+  var pat = document.getElementById("cyclic-pattern");
+  if (mode === "find") {
+    len.style.display = "none";
+    pat.style.display = "inline-block";
+  } else {
+    len.style.display = "inline-block";
+    pat.style.display = "none";
+  }
+}
+</script>
+{% endblock %}

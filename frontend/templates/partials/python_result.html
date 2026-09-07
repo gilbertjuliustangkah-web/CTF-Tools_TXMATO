@@ -1,0 +1,47 @@
+{% if result %}
+<div class="card">
+  {% if result.ok %}
+    {% if result.timed_out %}
+      <p class="f-11 mb-8"><span class="badge badge-missing">timed out</span>
+        cwd: <span class="c-dim">{{ result.cwd }}</span></p>
+    {% else %}
+      <p class="f-11 mb-8">exit:
+        <span class="badge {{ 'badge-open' if result.exit_code == 0 else 'badge-missing' }}">{{ result.exit_code if result.exit_code is not none else 'n/a' }}</span>
+        · duration: <span class="c-dim">{{ result.duration }}s</span>
+        · cwd: <span class="c-dim">{{ result.cwd }}</span></p>
+    {% endif %}
+    {% if result.output %}
+      <div class="mono-block">{{ result.output }}</div>
+    {% else %}
+      <p class="c-dim f-12">(no output)</p>
+    {% endif %}
+  {% else %}
+    <p class="msg-error">{{ result.error }}</p>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if cleared is defined %}
+<div class="card bc-green"><p class="msg-success">Cleared {{ cleared }} saved snippet(s) from {{ active_ws }}.</p></div>
+{% endif %}
+
+{% if history %}
+<div class="card">
+  <div class="card-title">Saved code (workspace database)</div>
+  {% for h in history %}
+    <details class="tool-log mb-8">
+      <summary><span class="c-cyan">{{ h.code | truncate(80, true) }}</span> ·
+        <span class="c-dim">{{ h.created_at }}</span> ·
+        <span class="{{ 'c-green' if h.exit_code == 0 else 'c-dim' }}">rc={{ h.exit_code if h.exit_code is not none else '?' }}</span></summary>
+      {% if h.output %}
+        <div class="mono-block maxh-200">{{ h.output }}</div>
+      {% endif %}
+      <form class="mt-8" hx-post="/python/run" hx-target="#py-result" hx-swap="innerHTML">
+        <input type="hidden" name="code" value="{{ h.code }}">
+        <input type="hidden" name="stdin" value="{{ h.stdin or '' }}">
+        <button class="btn btn-ghost btn-tiny" type="submit">Run again</button>
+      </form>
+    </details>
+  {% endfor %}
+</div>
+{% endif %}

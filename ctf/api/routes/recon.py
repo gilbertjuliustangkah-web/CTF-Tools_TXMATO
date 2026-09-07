@@ -35,3 +35,36 @@ async def port_scan(request: Request, target: str = Form(...), ports: str = Form
         "result": result,
         "target": target,
     })
+
+
+@router.post("/dns", response_class=HTMLResponse)
+async def dns(request: Request, domain: str = Form(...), record_type: str = Form("A")):
+    plugin_cls = PluginRegistry.get("recon", "dns_lookup")
+    result = await plugin_cls().execute(domain, type=record_type)
+    return templates(request).TemplateResponse(request, "partials/scan_result.html", {
+        "request": request,
+        "result": result,
+        "target": domain,
+    })
+
+
+@router.post("/whois", response_class=HTMLResponse)
+async def whois(request: Request, domain: str = Form(...)):
+    plugin_cls = PluginRegistry.get("recon", "whois_lookup")
+    result = await plugin_cls().execute(domain)
+    return templates(request).TemplateResponse(request, "partials/scan_result.html", {
+        "request": request,
+        "result": result,
+        "target": domain,
+    })
+
+
+@router.post("/ssl", response_class=HTMLResponse)
+async def ssl(request: Request, target: str = Form(...), port: int = Form(443)):
+    plugin_cls = PluginRegistry.get("recon", "ssl_check")
+    result = await plugin_cls().execute(target, port=port)
+    return templates(request).TemplateResponse(request, "partials/scan_result.html", {
+        "request": request,
+        "result": result,
+        "target": target,
+    })

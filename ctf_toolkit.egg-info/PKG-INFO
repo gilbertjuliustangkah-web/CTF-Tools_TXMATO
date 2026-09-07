@@ -13,3 +13,6 @@ Requires-Dist: jinja2>=3.1
 Requires-Dist: python-multipart>=0.0.9
 Requires-Dist: pydantic>=2
 Requires-Dist: aiosqlite>=0.20
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"

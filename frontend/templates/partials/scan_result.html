@@ -1,40 +1,97 @@
 {% if result.success %}
-<div class="card" style="border-color:var(--green)">
-  <div class="card-title" style="color:var(--green)">Scan Result — {{ target }}</div>
-  {% set ports = result.data.get('ports', []) %}
-  {% if ports %}
-    <table>
-      <thead>
-        <tr>
-          <th>Port</th>
-          <th>Protocol</th>
-          <th>State</th>
-          <th>Service</th>
-          <th>Version</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in ports %}
-        <tr>
-          <td style="color:var(--yellow)">{{ p.port }}</td>
-          <td style="color:var(--dim)">{{ p.get('protocol','tcp') }}</td>
-          <td><span class="badge badge-open">open</span></td>
-          <td style="color:var(--cyan)">{{ p.service }}</td>
-          <td style="color:var(--dim)">{{ p.get('version','') }}</td>
-        </tr>
+{% set d = result.data %}
+<div class="card bc-green">
+  {% if 'ports' in d %}
+    <div class="card-title c-green">Scan Result — {{ target }}</div>
+    {% if d.ports %}
+      <table>
+        <thead><tr><th>Port</th><th>Protocol</th><th>State</th><th>Service</th><th>Version</th></tr></thead>
+        <tbody>
+        {% for p in d.ports %}
+          <tr>
+            <td class="c-yellow">{{ p.port }}</td>
+            <td class="c-dim">{{ p.get('protocol','tcp') }}</td>
+            <td><span class="badge badge-open">open</span></td>
+            <td class="c-cyan">{{ p.service }}</td>
+            <td class="c-dim">{{ p.get('version','') }}</td>
+          </tr>
         {% endfor %}
-      </tbody>
+        </tbody>
+      </table>
+      <p class="f-11 c-dim mt-10">
+        Method: {{ d.get('method','?') }} — Saved to workspace.
+      </p>
+    {% else %}
+      <p class="c-dim f-12">No open ports found. Method: {{ d.get('method','?') }}</p>
+    {% endif %}
+
+  {% elif 'records' in d %}
+    <div class="card-title c-green">DNS Lookup — {{ target }}</div>
+    <div class="f-11 c-dim mb-8">Method: {{ d.get('method','?') }} · Type: {{ d.get('query_type','A') }}</div>
+    {% if d.records %}
+      <div class="mono-block">
+        {% for r in d.records %}{{ r }}
+<br>{% endfor %}
+      </div>
+    {% else %}
+      <p class="c-dim f-12">No {{ d.get('query_type','A') }} records found.</p>
+    {% endif %}
+
+  {% elif 'fields' in d %}
+    <div class="card-title c-green">WHOIS — {{ target }}</div>
+    {% if d.fields %}
+      <table>
+        <thead><tr><th>Field</th><th>Value</th></tr></thead>
+        <tbody>
+        {% for k, v in d.fields.items() %}
+          <tr><td class="c-dim nowrap">{{ k }}</td><td>{{ v }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="mono-block f-11">{{ d.get('raw','No data')[:500] }}</div>
+    {% endif %}
+
+  {% elif 'subject' in d %}
+    <div class="card-title c-green">SSL Certificate — {{ target }}</div>
+    <table>
+      {% if d.subject %}
+        <tr><td class="c-dim w-130">Subject</td><td>{{ d.subject.get('commonName', d.subject) }}</td></tr>
+      {% endif %}
+      {% if d.issuer %}
+        <tr><td class="c-dim">Issuer</td><td>{{ d.issuer.get('organizationName', d.issuer) }}</td></tr>
+      {% endif %}
+      {% if d.not_after %}
+        <tr><td class="c-dim">Expires</td>
+          <td>{{ d.not_after }}
+            {% if d.get('days_until_expiry') is not none %}
+              <span class="badge {{ 'badge-missing' if d.days_until_expiry < 0 else ('badge-osint' if d.days_until_expiry < 30 else 'badge-installed') }}">
+                {{ d.days_until_expiry }} days
+              </span>
+            {% endif %}
+          </td></tr>
+      {% endif %}
+      {% if d.san %}
+        <tr><td class="c-dim">SAN</td><td>{{ d.san | join(', ') }}</td></tr>
+      {% endif %}
+      <tr><td class="c-dim">Port</td><td>{{ d.port }}</td></tr>
     </table>
+    {% if d.get('warnings') %}
+      <div class="mt-8">
+        {% for w in d.warnings %}
+          <div class="c-red f-11 p-4">! {{ w }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
   {% else %}
-    <p style="color:var(--dim);font-size:12px">No open ports found.</p>
+    <div class="card-title c-green">Result — {{ target }}</div>
+    <pre class="out-box f-12 c-green">{{ d | tojson(indent=2) }}</pre>
   {% endif %}
-  <p style="font-size:11px;color:var(--dim);margin-top:10px">
-    Method: {{ result.data.get('method','?') }} — Saved to workspace.
-  </p>
 </div>
 {% else %}
-<div class="card" style="border-color:var(--red)">
-  <div class="card-title" style="color:var(--red)">Scan Failed</div>
+<div class="card bc-red">
+  <div class="card-title c-red">Scan Failed</div>
   <p class="msg-error">{{ result.error }}</p>
 </div>
 {% endif %}

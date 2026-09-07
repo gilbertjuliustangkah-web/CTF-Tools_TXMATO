@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Web{% endblock %}
+{% block topbar_title %}Web — HTTP Analysis{% endblock %}
+
+{% block content %}
+<div class="grid-3">
+  <div class="card">
+    <div class="card-title">HTTP Headers</div>
+    <form class="form-row-nowrap" hx-post="/web/headers" hx-target="#web-result" hx-indicator="#web-indicator">
+      <div class="grow">
+        <label>URL</label>
+        <input type="text" name="url" placeholder="https://example.com" required>
+      </div>
+      <button class="btn btn-primary" type="submit">Fetch</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">robots.txt</div>
+    <form class="form-row-nowrap" hx-post="/web/robots" hx-target="#web-result" hx-indicator="#web-indicator">
+      <div class="grow">
+        <label>URL</label>
+        <input type="text" name="url" placeholder="https://example.com" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Fetch</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">JWT Decode</div>
+    <form hx-post="/web/jwt" hx-target="#web-result" hx-indicator="#web-indicator">
+      <label>JWT token</label>
+      <input type="text" name="token" placeholder="eyJhbGciOiJIUzI1NiJ9..." required>
+      <button class="btn btn-ghost mt-8" type="submit">Decode</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-3 mt-16">
+  <div class="card">
+    <div class="card-title">Cookie Inspector</div>
+    <form hx-post="/web/cookies" hx-target="#web-result" hx-indicator="#web-indicator">
+      <label>Cookie string</label>
+      <input type="text" name="cookie_string" placeholder="session=abc; Secure; HttpOnly" required>
+      <button class="btn btn-ghost mt-8" type="submit">Inspect</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Directory Enumeration</div>
+    <form class="form-row-nowrap" hx-post="/web/dir" hx-target="#web-result" hx-indicator="#web-indicator">
+      <div class="grow">
+        <label>URL</label>
+        <input type="text" name="url" placeholder="https://example.com" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Scan</button>
+    </form>
+  </div>
+</div>
+
+<div id="web-result"></div>
+
+<div class="card bc-cyan mt-16" id="terminal-card">
+  <div class="card-title c-cyan">Web Terminal — Linux via WSL</div>
+  <div class="row-12 mb-8">
+    <form class="grow" hx-post="/web/terminal/start" hx-target="#term-result" hx-swap="innerHTML">
+      <button class="btn btn-ghost" type="submit">▶ Start WSL session</button>
+    </form>
+    <form hx-post="/web/terminal/stop" hx-target="#term-result" hx-swap="innerHTML">
+      <button class="btn btn-danger" type="submit">■ Stop</button>
+    </form>
+    <span class="f-11 c-dim self-center" id="term-status"
+          hx-get="/web/terminal/status" hx-trigger="load" hx-swap="innerHTML"></span>
+  </div>
+  <form class="form-row-nowrap" hx-post="/web/terminal/run" hx-target="#term-result" hx-swap="innerHTML"
+        hx-indicator="#term-indicator">
+    <div class="grow">
+      <label>Linux CLI command</label>
+      <input type="text" name="command" placeholder="ls -la" autocomplete="off" spellcheck="false" required>
+    </div>
+    <button class="btn btn-primary" type="submit">
+      ⚡ Run in WSL
+      <span class="htmx-indicator" id="term-indicator">…</span>
+    </button>
+  </form>
+  <p class="f-11 c-dim mt-8">
+    Commands run inside one persistent <strong>wsl</strong> session (share state / working directory).
+    Output is captured with a per-command timeout; saved to the workspace database.
+    Type <span class="c-yellow">exit</span> to close the shell on purpose.
+  </p>
+</div>
+
+<div id="term-result"></div>
+{% endblock %}

@@ -3,7 +3,14 @@
 {% block topbar_title %}Dashboard — {{ active_ws }}{% endblock %}
 
 {% block content %}
-<div class="grid-3" style="margin-bottom:16px">
+<div class="page-head">
+  <div>
+    <div class="crumb">Workspace / {{ active_ws }}</div>
+    <h2>Operation Dashboard</h2>
+  </div>
+</div>
+
+<div class="grid-3 mb-16">
   <div class="card stat-box">
     <div class="stat-value">{{ results | length }}</div>
     <div class="stat-label">Scan Results</div>
@@ -13,7 +20,7 @@
     <div class="stat-label">Flags Captured</div>
   </div>
   <div class="card stat-box">
-    <div class="stat-value" style="color:var(--green)">
+    <div class="stat-value c-green">
       {% if workspace.target_ip %}{{ workspace.target_ip }}{% else %}—{% endif %}
     </div>
     <div class="stat-label">Target IP</div>
@@ -38,13 +45,13 @@
           <tr>
             <td><span class="badge badge-{{ r.module }}">{{ r.module }}</span></td>
             <td>{{ r.target }}</td>
-            <td style="color:var(--dim)">{{ r.created_at[:16] }}</td>
+            <td class="c-dim">{{ r.created_at[:16] }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     {% else %}
-      <p style="color:var(--dim);font-size:12px">No results yet. Run a scan from the Recon tab.</p>
+      <p class="c-dim f-12">No results yet. Run a scan from the Recon tab.</p>
     {% endif %}
   </div>
 
@@ -54,33 +61,33 @@
       <div class="card-title">Captured Flags</div>
       {% if flags %}
         {% for f in flags %}
-        <div style="margin-bottom:8px">
+        <div class="mb-8">
           <div class="flag-value">{{ f.flag }}</div>
           {% if f.description %}
-          <div style="font-size:11px;color:var(--dim);margin-top:2px">{{ f.description }}</div>
+          <div class="f-11 c-dim mt-2">{{ f.description }}</div>
           {% endif %}
         </div>
         {% endfor %}
       {% else %}
-        <p style="color:var(--dim);font-size:12px">No flags yet.</p>
+        <p class="c-dim f-12">No flags yet.</p>
       {% endif %}
 
-      <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
-      <div class="card-title" style="margin-bottom:8px">Add Flag</div>
-      <form method="POST" action="/workspace/flag" style="display:flex;flex-direction:column;gap:6px">
+      <hr class="hr-thin">
+      <div class="card-title mb-8">Add Flag</div>
+      <form class="flex-col-6" method="POST" action="/workspace/flag">
         <input type="text" name="flag" placeholder="FLAG{...}">
         <input type="text" name="description" placeholder="Description (optional)">
-        <button class="btn btn-primary" type="submit" style="align-self:flex-start;margin-top:4px">Save Flag</button>
+        <button class="btn btn-primary self-start mt-4" type="submit">Save Flag</button>
       </form>
     </div>
 
     <div class="card">
       <div class="card-title">Workspace Info</div>
       <table>
-        <tr><td style="color:var(--dim)">Name</td><td>{{ workspace.name | default('—') }}</td></tr>
-        <tr><td style="color:var(--dim)">Target IP</td><td>{{ workspace.target_ip or '—' }}</td></tr>
-        <tr><td style="color:var(--dim)">Domain</td><td>{{ workspace.target_domain or '—' }}</td></tr>
-        <tr><td style="color:var(--dim)">Created</td><td>{{ (workspace.created_at or '')[:16] }}</td></tr>
+        <tr><td class="c-dim">Name</td><td>{{ workspace.name | default('—') }}</td></tr>
+        <tr><td class="c-dim">Target IP</td><td>{{ workspace.target_ip or '—' }}</td></tr>
+        <tr><td class="c-dim">Domain</td><td>{{ workspace.target_domain or '—' }}</td></tr>
+        <tr><td class="c-dim">Created</td><td>{{ (workspace.created_at or '')[:16] }}</td></tr>
       </table>
     </div>
   </div>
@@ -89,16 +96,16 @@
 <!-- New workspace -->
 <div class="card">
   <div class="card-title">New Workspace</div>
-  <form method="POST" action="/workspace/new" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-    <div style="flex:1;min-width:140px">
+  <form class="form-row-10" method="POST" action="/workspace/new">
+    <div class="grow-140">
       <label>Name</label>
       <input type="text" name="name" placeholder="htb-machine" required>
     </div>
-    <div style="flex:1;min-width:120px">
+    <div class="grow-120">
       <label>Target IP</label>
       <input type="text" name="target_ip" placeholder="10.10.10.5">
     </div>
-    <div style="flex:1;min-width:140px">
+    <div class="grow-140">
       <label>Domain</label>
       <input type="text" name="target_domain" placeholder="target.htb">
     </div>

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}ExifTool{% endblock %}
+{% block topbar_title %}ExifTool — Metadata GUI{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Upload &amp; View Metadata</div>
+  <form class="form-row-10"
+    hx-post="/exiftool/upload"
+    hx-target="#exiftool-result"
+    hx-indicator="#exiftool-indicator"
+    hx-encoding="multipart/form-data"
+  >
+    <div class="grow-220">
+      <label>File to analyze (saved into workspace)</label>
+      <input type="file" name="file" required>
+    </div>
+    <button class="btn btn-primary" type="submit">
+      ◫ View Metadata
+      <span class="htmx-indicator" id="exiftool-indicator">…</span>
+    </button>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-title">Analyze by Path</div>
+  <form class="form-row-10-nowrap" hx-post="/exiftool/read" hx-target="#exiftool-result" hx-indicator="#exiftool-indicator">
+    <div class="grow">
+      <label>File Path (relative to workspace)</label>
+      <input type="text" name="filepath" placeholder="challenge.jpg" required>
+    </div>
+    <button class="btn btn-ghost" type="submit">
+      ◫ Read
+      <span class="htmx-indicator" id="exiftool-indicator">…</span>
+    </button>
+  </form>
+</div>
+
+<div class="card hidden" id="edit-card">
+  <div class="card-title">Edit / Delete Tags</div>
+  <form class="form-row-10" hx-post="/exiftool/edit" hx-target="#exiftool-result" hx-indicator="#exiftool-indicator">
+    <input type="hidden" name="filepath" id="edit-filepath">
+    <div class="grow-140">
+      <label>Tag Name</label>
+      <input type="text" name="tag_name" id="edit-tag" placeholder="Author, Title, …" required>
+    </div>
+    <div class="grow-180">
+      <label>New Value</label>
+      <input type="text" name="tag_value" placeholder="new value">
+    </div>
+    <button class="btn btn-primary" type="submit">✎ Set Tag</button>
+  </form>
+  <form class="form-row-10 mt-10" hx-post="/exiftool/delete" hx-target="#exiftool-result" hx-indicator="#exiftool-indicator">
+    <input type="hidden" name="filepath" id="delete-filepath">
+    <div class="grow-140">
+      <label>Tag to Delete</label>
+      <input type="text" name="tag_name" id="delete-tag" placeholder="Author">
+    </div>
+    <button class="btn btn-danger" type="submit">✕ Delete Tag</button>
+  </form>
+</div>
+
+<div id="exiftool-result"></div>
+
+<script>
+  // Populates the Edit/Delete card from a tag row in the result (exif_row_action partial).
+  document.body.addEventListener("click", function (ev) {
+    const btn = ev.target.closest("[data-edit-tag]");
+    if (!btn) return;
+    const card = document.getElementById("edit-card");
+    const fp = btn.getAttribute("data-filepath") || "";
+    const tag = btn.getAttribute("data-edit-tag") || "";
+    document.getElementById("edit-filepath").value = fp;
+    document.getElementById("edit-tag").value = tag;
+    document.getElementById("delete-filepath").value = fp;
+    document.getElementById("delete-tag").value = tag;
+    card.style.display = "";
+    card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+</script>
+{% endblock %}

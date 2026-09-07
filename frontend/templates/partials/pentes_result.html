@@ -1,0 +1,175 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-green">
+  <div class="card-title c-green">
+    {{ {'subdomains': 'Subdomain Enum — ',
+        'probe': 'Service Probe — ',
+        'dir': 'Directory Brute — ',
+        'auth': 'Auth Brute — ',
+        'sqli': 'SQLi Scan — ',
+        'xss': 'XSS Scan — '}.get(kind, 'Result — ') }}{{ target }}
+  </div>
+
+  {% if kind == 'subdomains' %}
+    <div class="f-11 c-dim mb-8">Method: {{ d.get('method','?') }} · Domain: {{ d.domain }}</div>
+    {% if d.subdomains %}
+      {% if d.subdomains[0] is string %}
+        <div class="mono-block">
+          {% for s in d.subdomains %}{{ s }}
+<br>{% endfor %}
+        </div>
+      {% else %}
+        <table>
+          <thead><tr><th>Subdomain</th><th>IPs</th></tr></thead>
+          <tbody>
+          {% for s in d.subdomains %}
+            <tr>
+              <td class="c-cyan">{{ s.host }}</td>
+              <td class="c-dim">{{ s.ips | join(', ') }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <p class="f-11 c-dim mt-8">Found {{ d.count }} subdomain(s). Saved to workspace.</p>
+    {% else %}
+      <p class="c-dim f-12">No subdomains resolved. Try a custom wordlist.</p>
+    {% endif %}
+
+  {% elif kind == 'probe' %}
+    <div class="f-11 c-dim mb-8">Method: {{ d.get('method','?') }}</div>
+    {% if d.ports %}
+      <table>
+        <thead><tr><th>Port</th><th>State</th><th>Service</th><th>Version</th><th>Banner</th></tr></thead>
+        <tbody>
+        {% for p in d.ports %}
+          <tr>
+            <td class="c-yellow">{{ p.port }}</td>
+            <td><span class="badge badge-open">open</span></td>
+            <td class="c-cyan">{{ p.service }}</td>
+            <td class="c-dim">{{ p.get('version','') }}</td>
+            <td class="c-dim">{{ p.get('banner','') }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="f-11 c-dim mt-8">Saved to workspace.</p>
+    {% else %}
+      <p class="c-dim f-12">No open services discovered.</p>
+    {% endif %}
+
+  {% elif kind == 'dir' %}
+    <div class="f-11 c-dim mb-8">Method: {{ d.get('method','?') }} · Base: {{ d.base }}</div>
+    {% if d.paths %}
+      {% if d.paths[0] is string %}
+        <div class="mono-block">
+          {% for p in d.paths %}{{ p }}
+<br>{% endfor %}
+        </div>
+      {% else %}
+        <table>
+          <thead><tr><th>Path</th><th>Status</th><th>Size</th></tr></thead>
+          <tbody>
+          {% for p in d.paths %}
+            <tr>
+              <td class="c-cyan">{{ p.path }}</td>
+              <td>
+                <span class="badge {{ 'badge-installed' if p.status in (200,301,302,307) else 'badge-osint' }}">{{ p.status }}</span>
+              </td>
+              <td class="c-dim">{{ p.size }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <p class="f-11 c-dim mt-8">Found {{ d.count }} path(s). Saved to workspace.</p>
+    {% else %}
+      <p class="c-dim f-12">No paths discovered. Try a larger wordlist.</p>
+    {% endif %}
+
+  {% elif kind == 'auth' %}
+    <p class="f-11 c-dim mb-8">Mode: {{ d.mode }} · Attempted: {{ d.attempted }}{% if d.cap_reached %} (cap reached){% endif %}</p>
+    {% if d.found %}
+      <table>
+        <thead><tr><th>Username</th><th>Password</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for c in d.found %}
+          <tr>
+            <td class="c-yellow">{{ c.username }}</td>
+            <td class="c-yellow">{{ c.password }}</td>
+            <td class="c-green">{{ c.note }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="f-11 c-dim mt-8">Credentials found — saved to workspace.</p>
+    {% else %}
+      <p class="c-dim f-12">No working credentials found in {{ d.attempted }} attempt(s).</p>
+    {% endif %}
+
+  {% elif kind == 'sqli' %}
+    <p class="f-11 c-dim mb-8">Baseline status: {{ d.baseline_status }} · Probes sent: {{ d.probes_sent }}</p>
+    {% if d.findings %}
+      <table>
+        <thead><tr><th>Probe</th><th>Stat</th><th>Severity</th><th>Indicators</th></tr></thead>
+        <tbody>
+        {% for f in d.findings %}
+          <tr>
+            <td class="c-cyan">{{ f.probe }}</td>
+            <td>{{ f.status }}</td>
+            <td><span class="badge {{ 'badge-alert' if f.severity == 'high' else 'badge-warn' }}">{{ f.severity }}</span></td>
+            <td class="c-dim">{{ f.reasons | join('; ') }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="f-11 c-dim mt-8">Positive indicators found — review manually. Saved to workspace.</p>
+    {% else %}
+      <p class="c-dim f-12">No SQL injection indicators detected. Note: error-based/blind detection on GET params only.</p>
+    {% endif %}
+
+  {% elif kind == 'xss' %}
+    <div class="grid-2">
+      <div>
+        <p class="f-12 c-dim mb-8">Reflection probes:</p>
+        {% if d.findings %}
+          <table>
+            <thead><tr><th>Probe</th><th>Reflected</th><th>Tag literal</th></tr></thead>
+            <tbody>
+            {% for f in d.findings %}
+              <tr>
+                <td class="c-cyan">{{ f.probe }}</td>
+                <td>{{ 'yes' if f.reflected else 'no' }}</td>
+                <td>
+                  <span class="badge {{ 'badge-alert' if f.unencoded_tag else ('badge-warn' if f.reflected else 'badge-osint') }}">
+                    {{ 'unencoded' if f.unencoded_tag else ('encoded' if f.reflected else 'n/a') }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+      <div>
+        <p class="f-12 mb-8">Hardening headers missing:</p>
+        {% if d.hardening_missing %}
+          <ul class="msg-warn">
+            {% for h in d.hardening_missing %}<li>{{ h }}</li>{% endfor %}
+          </ul>
+        {% else %}
+          <p class="c-dim f-12">CSP, X-Content-Type-Options, X-Frame-Options all present.</p>
+        {% endif %}
+      </div>
+    </div>
+    {% if d.reflected_xss_likely %}
+      <p class="f-11 c-green mt-8">Marker reflected as a literal tag — potential reflected XSS. Saved to workspace.</p>
+    {% endif %}
+  {% endif %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">PenTest Module Failed</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

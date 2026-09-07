@@ -1,36 +1,68 @@
 {% extends "base.html" %}
 {% block title %}Recon{% endblock %}
-{% block topbar_title %}Recon{% endblock %}
+{% block topbar_title %}Recon — OSINT &amp; Network{% endblock %}
 
 {% block content %}
 <div class="card">
   <div class="card-title">Port Scan</div>
-  <form
-    hx-post="/recon/scan"
-    hx-target="#scan-result"
-    hx-indicator="#scan-indicator"
-    style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"
-  >
-    <div style="flex:2;min-width:160px">
-      <label>Target IP / Hostname</label>
-      <input type="text" name="target" placeholder="10.10.10.5 or target.htb" required>
+  <form class="form-row" hx-post="/recon/scan" hx-target="#recon-result" hx-indicator="#recon-indicator">
+    <div class="grow-160">
+      <label>Target</label>
+      <input type="text" name="target" placeholder="10.10.10.5" required>
     </div>
-    <div style="flex:1;min-width:120px">
-      <label>Ports</label>
-      <input type="text" name="ports" value="common" placeholder="common | all | 80,443">
-    </div>
-    <div>
-      <button class="btn btn-primary" type="submit">
-        ◎ Scan
-        <span class="htmx-indicator" id="scan-indicator">…</span>
-      </button>
-    </div>
+    <select name="ports" class="form-select-auto" aria-label="Port scan scope">
+      <option value="common">Common ports</option>
+      <option value="all">All ports</option>
+    </select>
+    <button class="btn btn-primary" type="submit">Scan</button>
   </form>
-  <p style="font-size:11px;color:var(--dim);margin-top:8px">
-    Uses nmap if available, falls back to Python socket scan.
-    Results are automatically saved to the active workspace.
-  </p>
 </div>
 
-<div id="scan-result"></div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">DNS Lookup</div>
+    <form class="form-row" hx-post="/recon/dns" hx-target="#recon-result" hx-indicator="#recon-indicator">
+      <div class="grow-140">
+        <label>Domain</label>
+        <input type="text" name="domain" placeholder="example.com" required>
+      </div>
+      <select name="record_type" class="form-select-auto" aria-label="DNS record type">
+        <option value="A">A</option>
+        <option value="AAAA">AAAA</option>
+        <option value="MX">MX</option>
+        <option value="NS">NS</option>
+        <option value="TXT">TXT</option>
+      </select>
+      <button class="btn btn-ghost" type="submit">Lookup</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">WHOIS</div>
+    <form class="form-row-nowrap" hx-post="/recon/whois" hx-target="#recon-result" hx-indicator="#recon-indicator">
+      <div class="grow">
+        <label>Domain</label>
+        <input type="text" name="domain" placeholder="example.com" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Lookup</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mt-16">
+  <div class="card-title">SSL Certificate Check</div>
+  <form class="form-row-nowrap" hx-post="/recon/ssl" hx-target="#recon-result" hx-indicator="#recon-indicator">
+    <div class="grow">
+      <label>Host (optional :port)</label>
+      <input type="text" name="target" placeholder="example.com" required>
+    </div>
+    <div class="w-80">
+      <label>Port</label>
+      <input id="ssl-port" type="number" name="port" value="443" min="1" max="65535" step="1" inputmode="numeric" aria-label="SSL port" required>
+    </div>
+    <button class="btn btn-ghost" type="submit">Check</button>
+  </form>
+</div>
+
+<div id="recon-result"></div>
 {% endblock %}

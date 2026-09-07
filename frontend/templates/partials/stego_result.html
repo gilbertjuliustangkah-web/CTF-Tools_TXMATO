@@ -1,0 +1,31 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-green">
+  <div class="card-title c-green">Stego Analysis Result</div>
+
+  <table class="mb-12">
+    <tr><td class="c-dim w-140">File Type</td><td class="c-yellow">{{ d.file_type }}</td></tr>
+    <tr><td class="c-dim">File Size</td><td>{{ "{:,}".format(d.file_size) }} bytes</td></tr>
+    <tr><td class="c-dim">Entropy</td><td>{{ d.entropy }} / 8.0</td></tr>
+    <tr><td class="c-dim">Findings</td><td>{{ d.finding_count }}</td></tr>
+  </table>
+
+  {% if d.findings %}
+    {% for f in d.findings %}
+    {% set sev = f.severity %}
+    {% set color = 'red' if sev == 'high' else ('yellow' if sev == 'medium' else 'dim') %}
+    <div class="tag-box">
+      <span class="fw-600 c-{{ color }}">{{ f.type }}</span>
+      <span class="c-dim">— {{ f.detail }}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="msg-success">No steganography indicators found.</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

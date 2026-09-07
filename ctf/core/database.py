@@ -76,6 +76,27 @@ async def init_db():
                 FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
             );
 
+            CREATE TABLE IF NOT EXISTS terminal_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace_id INTEGER NOT NULL,
+                command TEXT NOT NULL,
+                output TEXT,
+                exit_code INTEGER,
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS python_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace_id INTEGER NOT NULL,
+                code TEXT NOT NULL,
+                stdin TEXT,
+                output TEXT,
+                exit_code INTEGER,
+                created_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+            );
+
             -- Default workspace
             INSERT OR IGNORE INTO workspaces (name, notes)
             VALUES ('default', 'Default workspace');
@@ -214,5 +235,111 @@ async def get_flags(workspace: str) -> list[dict]:
         )
         rows = await cur.fetchall()
         return [dict(r) for r in rows]
+    finally:
+        await _close(db)
+
+
+# ── Terminal history helpers ───────────────────────────────────────────────
+
+async def add_terminal_command(workspace: str, command: str, output: str = "",
+                               exit_code: int | None = None) -> int:
+    """Persist one executed terminal command + its output to the workspace."""
+    ws = await get_workspace(workspace)
+    if not ws:
+        ws = await create_workspace(workspace)
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "INSERT INTO terminal_history (workspace_id, command, output, exit_code) VALUES (?,?,?,?)",
+            (ws["id"], command, output, exit_code)
+        )
+        await db.commit()
+        return cur.lastrowid
+    finally:
+        await _close(db)
+
+
+async def get_terminal_history(workspace: str, limit: int = 50) -> list[dict]:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return []
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "SELECT id, command, output, exit_code, created_at "
+            "FROM terminal_history WHERE workspace_id = ? "
+            "ORDER BY created_at DESC, id DESC LIMIT ?",
+            (ws["id"], int(limit))
+        )
+        rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        await _close(db)
+
+
+async def clear_terminal_history(workspace: str) -> int:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return 0
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "DELETE FROM terminal_history WHERE workspace_id = ?", (ws["id"],)
+        )
+        await db.commit()
+        return cur.rowcount
+    finally:
+        await _close(db)
+
+
+# ── Python box history helpers ──────────────────────────────────────────────
+
+async def add_python_code(workspace: str, code: str, stdin: str = "",
+                          output: str = "", exit_code: int | None = None) -> int:
+    """Persist one executed Python snippet + its output to the workspace."""
+    ws = await get_workspace(workspace)
+    if not ws:
+        ws = await create_workspace(workspace)
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "INSERT INTO python_history (workspace_id, code, stdin, output, exit_code) VALUES (?,?,?,?,?)",
+            (ws["id"], code, stdin, output, exit_code)
+        )
+        await db.commit()
+        return cur.lastrowid
+    finally:
+        await _close(db)
+
+
+async def get_python_history(workspace: str, limit: int = 50) -> list[dict]:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return []
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "SELECT id, code, stdin, output, exit_code, created_at "
+            "FROM python_history WHERE workspace_id = ? "
+            "ORDER BY created_at DESC, id DESC LIMIT ?",
+            (ws["id"], int(limit))
+        )
+        rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        await _close(db)
+
+
+async def clear_python_history(workspace: str) -> int:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return 0
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "DELETE FROM python_history WHERE workspace_id = ?", (ws["id"],)
+        )
+        await db.commit()
+        return cur.rowcount
     finally:
         await _close(db)

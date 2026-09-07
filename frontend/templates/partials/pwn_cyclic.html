@@ -1,0 +1,27 @@
+{% if result.success %}
+{% set d = result.data %}
+<div class="card bc-cyan">
+  {% if d.mode == 'generate' %}
+    <div class="card-title c-cyan">Cyclic pattern — {{ d.length }} bytes</div>
+    <div class="mono-block f-11 maxh-260 scroll-y">{{ d.pattern }}</div>
+  {% else %}
+    <div class="card-title c-cyan">Offset found</div>
+    <table class="mb-8">
+      <tr><td class="c-dim w-150">Pattern ({{ d.found_in }})</td><td class="mono-block inline">{{ d.pattern }}</td></tr>
+      <tr><td class="c-dim">Offset</td>
+        <td><span class="badge badge-installed f-13">{{ d.offset }}</span></td></tr>
+      <tr><td class="c-dim">As 32-bit LE</td><td>{{ d.as_le32 }}</td></tr>
+      <tr><td class="c-dim">As 64-bit LE</td><td>{{ d.as_le64 }}</td></tr>
+    </table>
+    <p class="f-11 c-dim m-0">
+      Offset = distance from buffer start to the overwritten RIP/EIP word.
+      For a control transfer add ⟨offset − 8⟩ padding + ROP chain (64-bit) or ⟨offset⟩ padding (32-bit).
+    </p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
+  <p class="msg-error">{{ result.error }}</p>
+</div>
+{% endif %}

@@ -1,49 +1,211 @@
 {% if result.success %}
 {% set d = result.data %}
-<div class="card" style="border-color:var(--cyan)">
-  <div class="card-title" style="color:var(--cyan)">File Inspection Result</div>
+{% set tool = request.query_params.get('tool') or request.query_params.get('plugin') or '' %}
+<div class="card bc-cyan">
 
-  <table style="margin-bottom:12px">
-    <tr><td style="color:var(--dim);width:120px">Path</td><td>{{ d.path }}</td></tr>
-    <tr><td style="color:var(--dim)">Type</td><td style="color:var(--yellow)">{{ d.file_type }}</td></tr>
-    <tr><td style="color:var(--dim)">Size</td><td>{{ d.size_human }} ({{ d.size_bytes }} bytes)</td></tr>
+{% if 'hashes' in d %}
+  <div class="card-title c-cyan">Hash Calculator — {{ d.filename }}</div>
+  <table>
+    {% for algo, h in d.hashes.items() %}
+      <tr><td class="c-dim w-140">{{ algo }}</td><td class="mono-block inline">{{ h }}</td></tr>
+    {% endfor %}
+    <tr><td class="c-dim">File size</td><td>{{ d.file_size }} bytes</td></tr>
+  </table>
+
+{% elif 'lines' in d %}
+  <div class="card-title c-cyan">Hex Dump</div>
+  <div class="f-11 c-dim mb-8">
+    size {{ d.total_size }} bytes · offset 0x{{ "%x" % d.offset }} · group {{ d.group_size }}
+  </div>
+  <div class="mono-block f-10 maxh-500 scroll">
+    {% for line in d.lines[:200] %}{{ line }}
+<br>{% endfor %}{% if d.lines|length > 200 %}… {{ d.lines|length - 200 }} more lines{% endif %}
+  </div>
+
+{% elif 'file_type' in d %}
+  <div class="card-title c-cyan">File Inspection Result</div>
+  <table class="mb-12">
+    <tr><td class="c-dim w-120">Path</td><td>{{ d.path }}</td></tr>
+    <tr><td class="c-dim">Type</td><td class="c-yellow">{{ d.file_type }}</td></tr>
+    <tr><td class="c-dim">Size</td><td>{{ d.size_human }} ({{ d.size_bytes }} bytes)</td></tr>
     <tr>
-      <td style="color:var(--dim)">Entropy</td>
+      <td class="c-dim">Entropy</td>
       <td>
         {{ d.entropy }} / 8.0
         {% if d.entropy > 7.5 %}
-          <span style="color:var(--red);font-size:11px"> ← high (possibly encrypted/packed)</span>
+          <span class="c-red f-11"> ← high (possibly encrypted/packed)</span>
         {% elif d.entropy > 6.0 %}
-          <span style="color:var(--yellow);font-size:11px"> ← medium</span>
+          <span class="c-yellow f-11"> ← medium</span>
         {% endif %}
       </td>
     </tr>
   </table>
-
-  <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Hex preview</div>
-  <div class="mono-block" style="color:var(--cyan);font-size:11px">{{ d.hex_preview }}</div>
-
+  <div class="f-11 c-dim mb-4">Hex preview</div>
+  <div class="mono-block c-cyan f-11">{{ d.hex_preview }}</div>
   {% if d.get('exiftool') %}
-  <div style="font-size:11px;color:var(--dim);margin:12px 0 4px">Exiftool metadata</div>
-  <div class="mono-block" style="font-size:11px">{{ d.exiftool[:800] }}</div>
+    <div class="f-11 c-dim my-12-4">Exiftool metadata</div>
+    <div class="mono-block f-11">{{ d.exiftool[:800] }}</div>
   {% endif %}
-
   {% set strings = d.get('strings', []) %}
   {% if strings %}
-  <details style="margin-top:12px">
-    <summary style="cursor:pointer;font-size:12px;color:var(--dim)">
-      Strings ({{ strings | length }}) — click to expand
-    </summary>
-    <div class="mono-block" style="margin-top:8px;color:var(--text)">
-      {% for s in strings[:60] %}{{ s }}
-{% endfor %}{% if strings|length > 60 %}… {{ strings|length - 60 }} more{% endif %}
-    </div>
-  </details>
+    <details class="mt-12">
+      <summary class="ghost-summary">
+        Strings ({{ strings | length }}) — click to expand
+      </summary>
+      <div class="mono-block mt-8 c-text">
+        {% for s in strings[:60] %}{{ s }}
+<br>{% endfor %}{% if strings|length > 60 %}… {{ strings|length - 60 }} more{% endif %}
+      </div>
+    </details>
   {% endif %}
+
+{% elif 'strings' in d or 'total_count' in d %}
+  <div class="card-title c-cyan">Strings — {{ d.total_count }} found</div>
+  <div class="f-11 c-dim mb-8">
+    min length {{ d.min_length }} · file {{ d.file_size }} bytes
+    {% if 'encodings' in d %}({{ d.encodings | join(', ') }}){% endif %}
+  </div>
+  {% if d.strings is mapping %}
+    {% for enc, items in d.strings.items() %}
+      <div class="f-11 c-yellow my-8-4">{{ enc }} ({{ items | length }})</div>
+      <div class="mono-block f-11 maxh-200 scroll">
+        {% for s in items[:150] %}{{ s }}
+<br>{% endfor %}{% if items|length > 150 %}… {{ items|length - 150 }} more{% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="mono-block f-11 maxh-500 scroll">
+      {% for s in d.strings[:300] %}{{ s }}
+<br>{% endfor %}{% if d.strings|length > 300 %}… {{ d.strings|length - 300 }} more{% endif %}
+    </div>
+  {% endif %}
+
+{% elif 'signatures' in d %}
+  <div class="card-title c-cyan">Binwalk Scan — {{ d.count }} signatures</div>
+  {% if d.signatures %}
+    <table>
+      <thead><tr><th>Offset</th><th>Description</th></tr></thead>
+      <tbody>
+      {% for s in d.signatures %}
+        <tr>
+          <td class="mono-block inline">{{ s.hex_offset }}</td>
+          <td>{{ s.description }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="c-dim f-12">
+      No signatures found{% if d.get('binwalk_missing') %} (binwalk not installed — install via `pip install binwalk`){% endif %}.
+    </p>
+  {% endif %}
+  {% if d.get('note') %}<p class="f-11 c-yellow">{{ d.note }}</p>{% endif %}
+
+{% elif 'objects' in d and 'pdf_version' in d %}
+  <div class="card-title c-cyan">PDF Analysis</div>
+  <table>
+    <tr><td class="c-dim w-140">Version</td><td>{{ d.pdf_version }}</td></tr>
+    <tr><td class="c-dim">Objects</td><td>{{ d.objects | length }}</td></tr>
+    <tr><td class="c-dim">Pages</td><td>{{ d.pages }}</td></tr>
+    <tr><td class="c-dim">JavaScript</td><td>{{ "YES" if d.has_javascript else "no" }}</td></tr>
+    <tr><td class="c-dim">Embedded files</td><td>{{ "YES" if d.has_embedded_files else "no" }}</td></tr>
+    <tr><td class="c-dim">Launch actions</td><td>{{ "YES" if d.has_launch_action else "no" }}</td></tr>
+    <tr><td class="c-dim">Suspicious actions</td><td>{{ "YES" if d.has_suspicious_actions else "no" }}</td></tr>
+  </table>
+  {% if d.get('metadata') %}
+    <details class="mt-10">
+      <summary class="ghost-summary">Metadata</summary>
+      <table class="mt-8">
+        {% for k, v in d.metadata.items() %}
+          <tr><td class="c-dim w-140">{{ k }}</td><td>{{ v }}</td></tr>
+        {% endfor %}
+      </table>
+    </details>
+  {% endif %}
+  {% if d.get('warnings') %}
+    <div class="mt-8">
+      {% for w in d.warnings %}
+        <div class="c-red f-11 p-4">! {{ w }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if d.objects %}
+    <details class="mt-10">
+      <summary class="ghost-summary">Object list</summary>
+      <div class="mono-block mt-8 f-10">
+        {% for o in d.objects %}#{{ o.id }} (gen {{ o.gen }}) {{ o.type }}
+<br>{% endfor %}
+      </div>
+    </details>
+  {% endif %}
+
+{% elif 'is_ole' in d or 'streams' in d %}
+  <div class="card-title c-cyan">OLE / Office Document Analysis</div>
+  <table>
+    <tr><td class="c-dim w-140">OLE compound</td><td>{{ "YES" if d.is_ole else "no" }}</td></tr>
+    <tr><td class="c-dim">Office XML</td><td>{{ "YES" if d.is_office_xml else "no" }}</td></tr>
+    <tr><td class="c-dim">Streams</td><td>{{ d.streams | length }}</td></tr>
+    <tr><td class="c-red">Macros</td><td>{{ "YES — likely malicious" if d.has_macros else "no" }}</td></tr>
+  </table>
+  {% if d.streams %}
+    <details class="mt-10">
+      <summary class="ghost-summary">Streams</summary>
+      <div class="mono-block mt-8 f-10">
+        {% for s in d.streams %}{{ s }}
+<br>{% endfor %}
+      </div>
+    </details>
+  {% endif %}
+  {% if d.get('macro_indicators') %}
+    <div class="f-11 c-yellow mt-8">
+      Macro indicators: {{ d.macro_indicators | join(', ') }}
+    </div>
+  {% endif %}
+  {% if d.get('suspicious_patterns') %}
+    <div class="mt-8">
+      {% for p in d.suspicious_patterns %}
+        <div class="c-red f-11 p-3">! {{ p }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% if d.get('metadata') %}
+    <details class="mt-10">
+      <summary class="ghost-summary">Metadata</summary>
+      <div class="mono-block mt-8 f-10">{{ d.metadata }}</div>
+    </details>
+  {% endif %}
+
+{% elif 'plugin_used' in d %}
+  <div class="card-title c-cyan">Volatility — {{ d.plugin_used }}</div>
+  {% if d.get('processes') %}
+    <table>
+      <thead><tr><th>PID</th><th>PPID</th><th>Name</th></tr></thead>
+      <tbody>
+      {% for p in d.processes %}
+        <tr>
+          <td>{{ p.pid }}</td><td>{{ p.ppid }}</td><td>{{ p.name }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="mono-block f-11 maxh-400 scroll">{{ d.raw_output }}</div>
+  {% endif %}
+  {% if d.get('available_plugins') %}
+    <p class="f-11 c-dim mt-8">Available: {{ d.available_plugins | join(', ') }}</p>
+  {% endif %}
+  {% if d.get('vol_missing') %}
+    <p class="f-11 c-yellow">volatility not installed — no live analysis performed.</p>
+  {% endif %}
+
+{% else %}
+  <div class="card-title c-cyan">Forensic Result — {{ tool }}</div>
+  <pre class="out-box f-12 c-cyan">{{ d | tojson(indent=2) }}</pre>
+{% endif %}
 </div>
 {% else %}
-<div class="card" style="border-color:var(--red)">
-  <div class="card-title" style="color:var(--red)">Error</div>
+<div class="card bc-red">
+  <div class="card-title c-red">Error</div>
   <p class="msg-error">{{ result.error }}</p>
 </div>
 {% endif %}

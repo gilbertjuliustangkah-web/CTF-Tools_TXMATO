@@ -53,3 +53,23 @@ def is_within_workspace(path: Path, name: str, base: Path = WORKSPACE_ROOT) -> b
         return resolved.is_relative_to(ws_root)
     except (OSError, ValueError):
         return False
+
+
+def resolve_sandboxed(target: str, sandbox: str | Path, base: Path = WORKSPACE_ROOT) -> Path | None:
+    """Resolve `target` inside a sandbox directory.
+
+    Used by modules that read files from disk so the web UI stays scoped to the
+    active workspace. Returns the resolved Path, or None if the target would
+    escape the sandbox.
+    """
+    if isinstance(sandbox, str):
+        root = resolve_workspace_path(sandbox, base=base)
+    else:
+        root = Path(sandbox).expanduser().resolve()
+    candidate = Path(target or "").expanduser()
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    candidate = candidate.resolve()
+    if not candidate.is_relative_to(root):
+        return None
+    return candidate

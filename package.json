@@ -1,0 +1,36 @@
+{
+  "name": "ctf-toolkit",
+  "version": "0.1.0",
+  "description": "CTF Toolkit - unified CLI + local web dashboard (conquered by npm)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "postinstall": "node scripts/setup.mjs --check",
+    "start": "node scripts/server.mjs",
+    "web": "node scripts/server.mjs",
+    "dev": "node scripts/server.mjs --reload",
+    "cli": "node scripts/cli.mjs",
+    "shell": "node scripts/shell.mjs",
+    "test": "node scripts/test.mjs",
+    "doctor": "node scripts/cli.mjs tools status --json",
+    "verify": "node scripts/cli.mjs --help"
+  },
+  "keywords": [
+    "ctf",
+    "hacking",
+    "security",
+    "forensics",
+    "crypto",
+    "pwn",
+    "web",
+    "recon",
+    "reversing",
+    "stego"
+  ],
+  "author": "TXMATO",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

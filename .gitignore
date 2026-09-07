@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Node / npm
+node_modules/
+
+# Workspace (user data)
+workspace/*.db
+workspace/.active
+workspace/default/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+
+# Local fixtures
+*.log

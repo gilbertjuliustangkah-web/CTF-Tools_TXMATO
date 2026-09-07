@@ -26,6 +26,7 @@
           var input = document.createElement('input');
           input.type = 'hidden';
           input.name = 'csrf';
+          
           input.value = csrf;
           form.appendChild(input);
         });
@@ -249,6 +250,8 @@
     .badge-src    { background: rgba(137,180,250,.08); color: var(--dim); border: 1px solid var(--border); }
     .badge-missing { background: rgba(243,139,168,.15); color: var(--red); }
     .badge-na     { background: rgba(108,112,134,.15); color: var(--dim); }
+    .badge-installed { background: rgba(166,227,161,.15); color: var(--green); }
+    .badge-reverse { background: rgba(180,190,254,.15); color: #b4befe; }
 
     .tool-row {
       border-bottom: 1px solid rgba(31,37,53,.6);
@@ -267,7 +270,8 @@
     .tool-log { margin-top: 8px; }
     .tool-log summary { font-family: var(--font-mono); font-size: 11px; color: var(--accent); cursor: pointer; }
     .btn-tiny { padding: 3px 10px; font-size: 11px; }
-    .noselect { user-select: none; }
+    .btn-mini { padding: 1px 8px; font-size: 11px; }
+    .noselect { -webkit-user-select: none; user-select: none; }
 
     /* ── Code / mono blocks ── */
     .mono-block {
@@ -329,6 +333,126 @@
     /* ── Error / success ── */
     .msg-error   { color: var(--red); font-family: var(--font-mono); font-size: 12px; }
     .msg-success { color: var(--green); font-family: var(--font-mono); font-size: 12px; }
+
+    /* ── Layout ── */
+    .form-row      { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+    .form-row-nowrap { display: flex; gap: 8px; align-items: flex-end; }
+    .form-row-6    { display: flex; gap: 6px; align-items: flex-end; flex-wrap: wrap; }
+    .form-row-10   { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .form-row-10-nowrap { display: flex; gap: 10px; align-items: flex-end; }
+    .row-12        { display: flex; gap: 12px; flex-wrap: wrap; }
+    .flex-col      { display: flex; flex-direction: column; gap: 8px; }
+    .flex-col-6    { display: flex; flex-direction: column; gap: 6px; }
+    .grid-2-cols   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .inline        { display: inline; }
+    .inline-block  { display: inline-block; }
+    .hidden        { display: none; }
+    .grow          { flex: 1; }
+    .grow-2        { flex: 2; min-width: 140px; }
+    .grow-60       { flex: 1; min-width: 60px; }
+    .grow-100      { flex: 1; min-width: 100px; }
+    .grow-120      { flex: 1; min-width: 120px; }
+    .grow-140      { flex: 1; min-width: 140px; }
+    .grow-160      { flex: 1; min-width: 160px; }
+    .grow-180      { flex: 1; min-width: 180px; }
+    .grow-200      { flex: 1; min-width: 200px; }
+    .grow-220      { flex: 1; min-width: 220px; }
+    .flex-none     { flex: 0 0 auto; }
+    .self-start    { align-self: flex-start; }
+    .self-center   { align-self: center; }
+    .wrap          { flex-wrap: wrap; }
+    .form-select-auto { flex: 0 0 auto; width: auto; }
+    .resize-v      { resize: vertical; }
+    .float-right   { float: right; }
+
+    /* ── Text colors ── */
+    .c-dim    { color: var(--dim); }
+    .c-cyan   { color: var(--cyan); }
+    .c-red    { color: var(--red); }
+    .c-green  { color: var(--green); }
+    .c-yellow { color: var(--yellow); }
+    .c-purple { color: var(--purple); }
+    .c-accent { color: var(--accent); }
+    .c-text   { color: var(--text); }
+
+    /* ── Border colors ── */
+    .bc-cyan   { border-color: var(--cyan); }
+    .bc-red    { border-color: var(--red); }
+    .bc-green  { border-color: var(--green); }
+    .bc-purple { border-color: var(--purple); }
+
+    /* ── Fonts ── */
+    .f-9   { font-size: 9px; }
+    .f-10  { font-size: 10px; }
+    .f-11  { font-size: 11px; }
+    .f-12  { font-size: 12px; }
+    .f-13  { font-size: 13px; }
+    .fw-600 { font-weight: 600; }
+
+    /* ── Spacing ── */
+    .mt-2   { margin-top: 2px; }
+    .mt-4   { margin-top: 4px; }
+    .mt-6   { margin-top: 6px; }
+    .mt-8   { margin-top: 8px; }
+    .mt-10  { margin-top: 10px; }
+    .mt-12  { margin-top: 12px; }
+    .mt-16  { margin-top: 16px; }
+    .mb-2   { margin-bottom: 2px; }
+    .mb-4   { margin-bottom: 4px; }
+    .mb-6   { margin-bottom: 6px; }
+    .mb-8   { margin-bottom: 8px; }
+    .mb-10  { margin-bottom: 10px; }
+    .mb-12  { margin-bottom: 12px; }
+    .mb-16  { margin-bottom: 16px; }
+    .mb-20  { margin-bottom: 20px; }
+    .ml-6   { margin-left: 6px; }
+    .mr-4   { margin-right: 4px; }
+    .mr-6   { margin-right: 6px; }
+    .m-0    { margin: 0; }
+    .my-8-4   { margin: 8px 0 4px; }
+    .my-10-4  { margin: 10px 0 4px; }
+    .my-12-4  { margin: 12px 0 4px; }
+
+    /* ── Padding ── */
+    .p-3     { padding: 3px; }
+    .p-4     { padding: 4px; }
+    .p-4-0   { padding: 4px 0; }
+    .p-12-20 { padding: 12px 20px; }
+    .pl-8    { padding-left: 8px; }
+    .pl-18   { padding-left: 18px; }
+
+    /* ── Sizing ── */
+    .w-12  { width: 12px; }
+    .w-80  { width: 80px; }
+    .w-120 { width: 120px; }
+    .w-130 { width: 130px; }
+    .w-140 { width: 140px; }
+    .w-150 { width: 150px; }
+    .maxh-200 { max-height: 200px; }
+    .maxh-220 { max-height: 220px; }
+    .maxh-250 { max-height: 250px; }
+    .maxh-260 { max-height: 260px; }
+    .maxh-300 { max-height: 300px; }
+    .maxh-400 { max-height: 400px; }
+    .maxh-500 { max-height: 500px; }
+
+    /* ── Text helpers ── */
+    .nowrap     { white-space: nowrap; }
+    .break-all  { word-break: break-all; }
+    .pre        { white-space: pre; }
+    .right      { text-align: right; }
+    .ptr        { cursor: pointer; }
+    .scroll     { overflow: auto; }
+    .scroll-y   { overflow-y: auto; }
+
+    /* ── Composite boxes ── */
+    .out-box { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border);
+               border-radius: 4px; padding: 12px; }
+    .tag-box { padding: 6px 10px; margin-bottom: 4px; background: var(--bg);
+               border: 1px solid var(--border); border-radius: 4px; font-size: 11px; }
+    .ghost-summary { cursor: pointer; font-size: 12px; color: var(--dim); }
+    .hr-thin  { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+    .login-box { max-width: 360px; margin: 40px auto; }
   </style>
 </head>
 <body>
@@ -349,18 +473,26 @@
         <i class="nav-icon">⊞</i> Dashboard</a>
       <a href="/recon/"   class="{% if '/recon' in request.url.path %}active{% endif %}">
         <i class="nav-icon">◎</i> Recon</a>
-      <a href="#" class="nav-disabled" aria-disabled="true" tabindex="-1">
+      <a href="/web/"     class="{% if '/web' in request.url.path %}active{% endif %}">
         <i class="nav-icon">⬡</i> Web</a>
       <a href="/crypto/"  class="{% if '/crypto' in request.url.path %}active{% endif %}">
         <i class="nav-icon">⊕</i> Crypto</a>
-      <a href="/forensic/" class="{% if '/forensic' in request.url.path %}active{% endif %}">
+      <a href="/forensic/" class="{% if '/forensic' in request.url.path and '/exiftool' not in request.url.path %}active{% endif %}">
         <i class="nav-icon">⊘</i> Forensic</a>
+      <a href="/exiftool/" class="{% if '/exiftool' in request.url.path %}active{% endif %}">
+        <i class="nav-icon">◫</i> ExifTool</a>
+      <a href="/stego/" class="{% if '/stego' in request.url.path %}active{% endif %}">
+        <i class="nav-icon">▣</i> Stego</a>
       <a href="/tools/"    class="{% if '/tools' in request.url.path %}active{% endif %}">
         <i class="nav-icon">◱</i> Tools</a>
-      <a href="#" class="nav-disabled" aria-disabled="true" tabindex="-1">
+      <a href="/reverse/" class="{% if '/reverse' in request.url.path %}active{% endif %}">
         <i class="nav-icon">⊗</i> Reverse</a>
-      <a href="#" class="nav-disabled" aria-disabled="true" tabindex="-1">
+      <a href="/pwn/"      class="{% if '/pwn' in request.url.path %}active{% endif %}">
         <i class="nav-icon">◈</i> Pwn</a>
+      <a href="/pentes/"   class="{% if '/pentes' in request.url.path %}active{% endif %}">
+        <i class="nav-icon">⚔</i> PenTest</a>
+      <a href="/python/"   class="{% if '/python' in request.url.path %}active{% endif %}">
+        <i class="nav-icon">⌨</i> Python</a>
     </nav>
 
     <div class="sidebar-footer">

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Reverse{% endblock %}
+{% block topbar_title %}Reverse Engineering{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Binary Information</div>
+    <form class="form-row-nowrap" hx-post="/reverse/info" hx-target="#reverse-result" hx-indicator="#reverse-indicator">
+      <div class="grow">
+        <label>Binary path</label>
+        <input type="text" name="filepath" placeholder="challenge" required>
+      </div>
+      <button class="btn btn-primary" type="submit">Info</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Disassemble</div>
+    <form class="form-row-nowrap" hx-post="/reverse/disasm" hx-target="#reverse-result" hx-indicator="#reverse-indicator">
+      <div class="grow">
+        <label>Binary path</label>
+        <input type="text" name="filepath" placeholder="challenge" required>
+      </div>
+      <div class="w-80">
+        <label>Instr</label>
+        <input type="number" name="length" value="50">
+      </div>
+      <button class="btn btn-ghost" type="submit">Disasm</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mt-16">
+  <div class="card-title">Shellcode Extraction</div>
+  <form class="form-row-nowrap" hx-post="/reverse/shellcode" hx-target="#reverse-result" hx-indicator="#reverse-indicator">
+    <div class="grow">
+      <label>Binary path</label>
+      <input type="text" name="filepath" placeholder="sample.bin" required>
+    </div>
+    <button class="btn btn-ghost" type="submit">Extract</button>
+  </form>
+</div>
+
+<div id="reverse-result"></div>
+{% endblock %}

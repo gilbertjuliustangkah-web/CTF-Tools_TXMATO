@@ -3,19 +3,19 @@
 {% block topbar_title %}Login{% endblock %}
 
 {% block content %}
-<div style="max-width:360px;margin:40px auto">
+<div class="login-box">
   <div class="card">
     <div class="card-title">CTF Toolkit — Auth Required</div>
-    <p style="font-size:12px;color:var(--dim);margin-bottom:12px">
+    <p class="f-12 c-dim mb-12">
       This dashboard is exposed beyond localhost, so a token is required.
     </p>
     {% if error %}<p class="msg-error">{{ error }}</p>{% endif %}
-    <form method="POST" action="/login" style="display:flex;flex-direction:column;gap:8px">
+    <form class="flex-col" method="POST" action="/login">
       <label>Access token</label>
       <input type="password" name="token" placeholder="token" required autofocus>
-      <button class="btn btn-primary" type="submit" style="align-self:flex-start;margin-top:6px">Sign in</button>
+      <button class="btn btn-primary self-start mt-6" type="submit">Sign in</button>
     </form>
-    <p style="font-size:11px;color:var(--dim);margin-top:12px">
+    <p class="f-11 c-dim mt-12">
       Find the token in <code>workspace/.token</code> or set env <code>CTF_TOKEN</code>.
     </p>
   </div>

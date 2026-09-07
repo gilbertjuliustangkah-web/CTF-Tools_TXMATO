@@ -1,34 +1,88 @@
 {% extends "base.html" %}
 {% block title %}Crypto{% endblock %}
-{% block topbar_title %}Crypto — Encode / Decode{% endblock %}
+{% block topbar_title %}Crypto — Ciphers &amp; Analysis{% endblock %}
 
 {% block content %}
-<div class="card">
-  <div class="card-title">Encode / Decode</div>
-  <form
-    hx-post="/crypto/encode"
-    hx-target="#crypto-result"
-    hx-indicator="#crypto-indicator"
-  >
-    <label>Input</label>
-    <textarea name="data" rows="4" placeholder="Paste string, hash, or encoded data here…" style="font-family:var(--font-mono);font-size:12px"></textarea>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">Encode / Decode</div>
+    <form class="form-row" hx-post="/crypto/encode" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <div class="grow-200">
+        <label>Data</label>
+        <input type="text" name="data" placeholder="SGVsbG8=" required>
+      </div>
+      <select class="flex-none" name="mode">
+        <option value="detect">Auto-detect</option>
+        <option value="b64enc">Base64 Encode</option>
+        <option value="b64dec">Base64 Decode</option>
+        <option value="hexenc">Hex Encode</option>
+        <option value="hexdec">Hex Decode</option>
+        <option value="urlenc">URL Encode</option>
+        <option value="urldec">URL Decode</option>
+        <option value="rot13">ROT13</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Go</button>
+    </form>
+  </div>
 
-    <label style="margin-top:12px">Mode</label>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;margin-top:4px">
-      {% for m in ['detect','b64enc','b64dec','hexenc','hexdec','binenc','bindec','urlenc','urldec','rot13'] %}
-      <label style="display:flex;align-items:center;gap:4px;margin:0;cursor:pointer;font-size:12px;color:var(--text)">
-        <input type="radio" name="mode" value="{{ m }}" {% if m == 'detect' %}checked{% endif %}
-               style="width:auto;accent-color:var(--accent)">
-        {{ m }}
-      </label>
-      {% endfor %}
-    </div>
+  <div class="card">
+    <div class="card-title">Hash Identifier</div>
+    <form class="form-row-10-nowrap" hx-post="/crypto/hash-id" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <div class="grow">
+        <label>Hash string</label>
+        <input type="text" name="hash_str" placeholder="e99a18c428cb38d5f260853678922e03" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Identify</button>
+    </form>
+  </div>
+</div>
 
-    <button class="btn btn-primary" type="submit">
-      ⊕ Run
-      <span class="htmx-indicator" id="crypto-indicator">…</span>
-    </button>
-  </form>
+<div class="grid-2 mt-16">
+  <div class="card">
+    <div class="card-title">Caesar / ROT Brute Force</div>
+    <form class="form-row-10" hx-post="/crypto/caesar" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <div class="grow-200">
+        <label>Ciphertext</label>
+        <input type="text" name="text" placeholder="Pbzchgre Fpvrapr" required>
+      </div>
+      <button class="btn btn-ghost" type="submit">Brute Force</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">XOR Decrypt</div>
+    <form class="form-row-10" hx-post="/crypto/xor" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <div class="grow-140">
+        <label>Data (hex or text)</label>
+        <input type="text" name="data" placeholder="48656c6c6f" required>
+      </div>
+      <div class="grow-100">
+        <label>Key (hex or text)</label>
+        <input type="text" name="key" placeholder="xor-key">
+      </div>
+      <button class="btn btn-ghost" type="submit">XOR</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid-2 mt-16">
+  <div class="card">
+    <div class="card-title">RSA Key Analysis</div>
+    <form hx-post="/crypto/rsa" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <label>RSA parameters (n=, e=, d=, p=, q=) — one per line</label>
+      <textarea class="resize-v" name="data" rows="4" placeholder="e=65537&#10;n=0x9d8678d1..."></textarea>
+      <button class="btn btn-ghost mt-8" type="submit">Analyze RSA</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Frequency Analysis</div>
+    <form hx-post="/crypto/freq" hx-target="#crypto-result" hx-indicator="#crypto-indicator">
+      <label>Text to analyze</label>
+      <textarea class="resize-v" name="text" rows="4" placeholder="Paste ciphertext here..."></textarea>
+      <button class="btn btn-ghost mt-8" type="submit">Analyze</button>
+    </form>
+  </div>
 </div>
 
 <div id="crypto-result"></div>
