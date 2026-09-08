@@ -47,7 +47,7 @@ import ctf.modules.pentes.sqli_detect
 import ctf.modules.pentes.xss_detect
 
 from ctf.core import database
-from ctf.api.routes import dashboard, recon, crypto, forensic, workspace, auth, tools, web, reverse, pwn, stego, exiftool, pentes, pybox
+from ctf.api.routes import dashboard, recon, crypto, forensic, workspace, auth, tools, web, reverse, pwn, stego, exiftool, pentes, pybox, tools_db, notes
 from ctf.api import security
 
 HOST = os.environ.get("CTF_HOST", "127.0.0.1")
@@ -93,3 +93,5 @@ app.include_router(stego.router,      prefix="/stego",      tags=["stego"])
 app.include_router(exiftool.router,   prefix="/exiftool",   tags=["exiftool"])
 app.include_router(pentes.router,     prefix="/pentes",     tags=["pentes"])
 app.include_router(pybox.router,      prefix="/python",     tags=["python"])
+app.include_router(tools_db.tools_router, prefix="/tools-db",  tags=["tools-db"])
+app.include_router(notes.notes_router, prefix="/notes",     tags=["notes"])

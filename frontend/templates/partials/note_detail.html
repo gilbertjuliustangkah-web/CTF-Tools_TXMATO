@@ -1,0 +1,16 @@
+<div class="card">
+  <div class="card-title">{{ note.title }}</div>
+  <div class="c-dim f-11 mb-8">{{ note.created_at[:16].replace('T', ' ') }} · updated {{ note.updated_at[:16].replace('T', ' ') }}</div>
+  {% if note.tags %}
+  <div class="mb-8">
+    {% for tag in note.tags.split(',') %}
+    <span class="badge badge-misc mr-4">{{ tag.strip() }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="pre break-all">{{ note.content }}</div>
+  <div class="mt-12 flex-row-6">
+    <button class="btn btn-ghost" onclick="openNoteEdit({{ note.id }}, '{{ note.title|e }}', '{{ note.content|e }}', '{{ note.tags|e }}')">✎ Edit</button>
+    <button class="btn btn-danger ml-6" onclick="deleteNote({{ note.id }})">✕ Delete</button>
+  </div>
+</div>

@@ -3,9 +3,11 @@ Forensic - ExifTool Web GUI Plugin
 Full metadata viewer/editor wrapping exiftool with structured JSON output.
 """
 import json
+import platform
+import shutil
 from pathlib import Path
 from ctf.core.plugin import PluginBase, PluginResult, register_plugin
-from ctf.core.process import run, is_available
+from ctf.core.process import run
 from ctf.core import workspace as ws_util
 
 
@@ -14,6 +16,32 @@ class ExiftoolGui(PluginBase):
     name = "exiftool_gui"
     description = "ExifTool GUI: view, edit, delete metadata tags from files"
     category = "forensic"
+
+    def _get_exiftool_cmd(self):
+        """Get the exiftool command, using WSL on Windows if available."""
+        if platform.system() == "Windows":
+            # Check if WSL with kali-linux has exiftool
+            if shutil.which("wsl"):
+                try:
+                    import subprocess
+                    result = subprocess.run(["wsl", "-d", "kali-linux", "--", "which", "exiftool"], 
+                                          capture_output=True, timeout=30)
+                    if result.returncode == 0:
+                        return ["wsl", "-d", "kali-linux", "--", "exiftool"]
+                except Exception:
+                    pass
+        return ["exiftool"]
+
+    def _to_wsl_path(self, path: Path) -> str:
+        """Convert Windows path to WSL path."""
+        if platform.system() == "Windows":
+            # Convert C:\path\to\file to /mnt/c/path/to/file
+            path_str = str(path.resolve())
+            if len(path_str) >= 2 and path_str[1] == ':':
+                drive = path_str[0].lower()
+                rest = path_str[2:].replace('\\', '/')
+                return f"/mnt/{drive}{rest}"
+        return str(path)
 
     async def execute(self, target: str, **kwargs) -> PluginResult:
         sandbox = kwargs.get("sandbox")
@@ -31,21 +59,25 @@ class ExiftoolGui(PluginBase):
                 success=False, error=f"File not found: {target}"
             )
 
-        if not is_available("exiftool"):
+        exiftool_cmd = self._get_exiftool_cmd()
+        if exiftool_cmd == ["exiftool"] and not shutil.which("exiftool"):
             return self._fallback_read(path, target)
 
+        # Convert path for WSL if needed
+        exiftool_path = self._to_wsl_path(path) if exiftool_cmd[0] == "wsl" else str(path)
+
         if mode == "read":
-            return await self._read_tags(path, target)
+            return await self._read_tags(exiftool_path, target, exiftool_cmd)
         elif mode == "edit":
-            return await self._edit_tag(path, target, tag_name, tag_value)
+            return await self._edit_tag(exiftool_path, target, tag_name, tag_value, exiftool_cmd)
         elif mode == "delete":
-            return await self._delete_tag(path, target, tag_name)
+            return await self._delete_tag(exiftool_path, target, tag_name, exiftool_cmd)
         elif mode == "export_json":
-            return await self._export_json(path, target)
+            return await self._export_json(exiftool_path, target, exiftool_cmd)
         elif mode == "export_csv":
-            return await self._export_csv(path, target)
+            return await self._export_csv(exiftool_path, target, exiftool_cmd)
         else:
-            return await self._read_tags(path, target)
+            return await self._read_tags(exiftool_path, target, exiftool_cmd)
 
     def parse(self, raw_output: str) -> dict:
         return {"raw": raw_output}
@@ -70,8 +102,9 @@ class ExiftoolGui(PluginBase):
             return candidate
         return raw_path
 
-    async def _read_tags(self, path: Path, target: str) -> PluginResult:
-        result = await run("exiftool", "-json", "-G", str(path), timeout=30)
+    async def _read_tags(self, path: str, target: str, exiftool_cmd) -> PluginResult:
+        cmd = exiftool_cmd + ["-json", "-G", path]
+        result = await run(*cmd, timeout=30)
         if not result.ok:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
@@ -98,24 +131,22 @@ class ExiftoolGui(PluginBase):
             module="forensic", plugin="exiftool_gui", target=target,
             success=True,
             data={
-                "path": str(path),
+                "path": path,
                 "groups": groups,
                 "total_tags": sum(len(v) for v in groups.values()),
-                "filename": path.name,
+                "filename": Path(path).name,
             }
         )
 
-    async def _edit_tag(self, path: Path, target: str, tag_name: str, tag_value: str) -> PluginResult:
+    async def _edit_tag(self, path: str, target: str, tag_name: str, tag_value: str, exiftool_cmd) -> PluginResult:
         if not tag_name:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
                 success=False, error="No tag name specified"
             )
 
-        result = await run(
-            "exiftool", f"-{tag_name}={tag_value}", "-overwrite_original", str(path),
-            timeout=30
-        )
+        cmd = exiftool_cmd + [f"-{tag_name}={tag_value}", "-overwrite_original", path]
+        result = await run(*cmd, timeout=30)
         if result.ok:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
@@ -127,17 +158,15 @@ class ExiftoolGui(PluginBase):
             success=False, error=result.stderr or "Failed to edit tag"
         )
 
-    async def _delete_tag(self, path: Path, target: str, tag_name: str) -> PluginResult:
+    async def _delete_tag(self, path: str, target: str, tag_name: str, exiftool_cmd) -> PluginResult:
         if not tag_name:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
                 success=False, error="No tag name specified"
             )
 
-        result = await run(
-            "exiftool", f"-{tag_name}=", "-overwrite_original", str(path),
-            timeout=30
-        )
+        cmd = exiftool_cmd + [f"-{tag_name}=", "-overwrite_original", path]
+        result = await run(*cmd, timeout=30)
         if result.ok:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
@@ -149,8 +178,9 @@ class ExiftoolGui(PluginBase):
             success=False, error=result.stderr or "Failed to delete tag"
         )
 
-    async def _export_json(self, path: Path, target: str) -> PluginResult:
-        result = await run("exiftool", "-json", "-G", str(path), timeout=30)
+    async def _export_json(self, path: str, target: str, exiftool_cmd) -> PluginResult:
+        cmd = exiftool_cmd + ["-json", "-G", path]
+        result = await run(*cmd, timeout=30)
         if result.ok:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
@@ -162,8 +192,9 @@ class ExiftoolGui(PluginBase):
             success=False, error=result.stderr
         )
 
-    async def _export_csv(self, path: Path, target: str) -> PluginResult:
-        result = await run("exiftool", "-csv", "-G", str(path), timeout=30)
+    async def _export_csv(self, path: str, target: str, exiftool_cmd) -> PluginResult:
+        cmd = exiftool_cmd + ["-csv", "-G", path]
+        result = await run(*cmd, timeout=30)
         if result.ok:
             return PluginResult(
                 module="forensic", plugin="exiftool_gui", target=target,
@@ -212,7 +243,7 @@ class ExiftoolGui(PluginBase):
                 "total_tags": sum(len(v) for v in groups.values()),
                 "filename": path.name,
                 "fallback_mode": True,
-                "note": "exiftool not available — showing basic metadata only",
+                "note": "exiftool not available — showing basic metadata only. Install exiftool for full metadata: Windows (WSL): 'wsl -d kali-linux -- apt install libimage-exiftool-perl', Windows (native): 'scoop install exiftool', Linux: 'sudo apt install libimage-exiftool-perl', macOS: 'brew install exiftool'",
             }
         )
 

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Notes{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Notes</div>
+  <form class="form-row-10 mb-16" hx-post="/notes/add?ws={{ active_ws }}" hx-target="#notes-list" hx-swap="outerHTML">
+    <div class="grow-200">
+      <label>Title</label>
+      <input type="text" name="title" placeholder="e.g. Target credentials" required>
+    </div>
+    <div class="grow-300">
+      <label>Content</label>
+      <textarea name="content" rows="3" placeholder="Notes about the target..." required></textarea>
+    </div>
+    <div class="grow-160">
+      <label>Tags (comma-separated)</label>
+      <input type="text" name="tags" placeholder="credentials, ssh, root">
+    </div>
+    <button class="btn btn-primary self-start" type="submit">+ Add Note</button>
+  </form>
+
+  <div id="notes-list">
+    {% for note in notes %}
+    <div class="card mb-12">
+      <div class="flex-row-6 mb-8">
+        <div class="grow">
+          <h4 class="c-text">{{ note.title }}</h4>
+          <div class="c-dim f-11 mt-2">{{ note.created_at[:16].replace('T', ' ') }} · updated {{ note.updated_at[:16].replace('T', ' ') }}</div>
+          {% if note.tags %}
+          <div class="mt-4">
+            {% for tag in note.tags.split(',') %}
+            <span class="badge badge-misc mr-4">{{ tag.strip() }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="flex-none">
+          <button class="btn btn-ghost btn-mini" onclick="openNoteEdit({{ note.id }}, '{{ note.title|e }}', '{{ note.content|e }}', '{{ note.tags|e }}')">✎ Edit</button>
+          <button class="btn btn-danger btn-mini ml-6" onclick="deleteNote({{ note.id }})">✕ Delete</button>
+        </div>
+      </div>
+      <div class="pre c-dim break-all">{{ note.content }}</div>
+    </div>
+    {% else %}
+    <div class="c-dim text-center p-16">No notes yet. Add one above!</div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Edit Note Modal -->
+<div class="modal-backdrop" id="note-edit-modal">
+  <div class="modal-box" style="max-width: 700px;">
+    <div class="modal-header">
+      <div class="modal-title">Edit Note</div>
+      <button class="modal-close" onclick="closeNoteEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="flex-col" id="note-edit-form">
+        <input type="hidden" name="note_id" id="edit-note-id">
+        <label>Title</label>
+        <input type="text" name="title" id="edit-note-title" required>
+        <label>Content</label>
+        <textarea name="content" id="edit-note-content" rows="10" required></textarea>
+        <label>Tags (comma-separated)</label>
+        <input type="text" name="tags" id="edit-note-tags" placeholder="credentials, ssh, root">
+        <button class="btn btn-primary mt-12" type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function openNoteEdit(id, title, content, tags) {
+  document.getElementById('edit-note-id').value = id;
+  document.getElementById('edit-note-title').value = title;
+  document.getElementById('edit-note-content').value = content;
+  document.getElementById('edit-note-tags').value = tags;
+  document.getElementById('note-edit-modal').classList.add('active');
+}
+function closeNoteEdit() {
+  document.getElementById('note-edit-modal').classList.remove('active');
+}
+
+async function deleteNote(id) {
+  if (!confirm('Delete this note?')) return;
+  const res = await fetch('/notes/delete?ws={{ active_ws }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+    body: 'note_id=' + id
+  });
+  if (res.ok) location.reload();
+}
+
+document.getElementById('note-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await fetch('/notes/update?ws={{ active_ws }}', {
+    method: 'POST', body: fd,
+    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
+  });
+  if (res.ok) { closeNoteEdit(); location.reload(); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Custom Tools{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-title">Custom Tools</div>
+  <form class="form-row-10 mb-16" hx-post="/tools-db/add?ws={{ active_ws }}" hx-target="#tools-list" hx-swap="outerHTML">
+    <div class="grow-160">
+      <label>Name</label>
+      <input type="text" name="name" placeholder="nmap scan" required>
+    </div>
+    <div class="grow-220">
+      <label>Command</label>
+      <input type="text" name="command" placeholder="nmap -sV -T4" required>
+    </div>
+    <div class="grow-140">
+      <label>Category</label>
+      <input type="text" name="category" placeholder="recon, web, crypto...">
+    </div>
+    <div class="grow-180">
+      <label>Args Template (optional)</label>
+      <input type="text" name="args_template" placeholder="{target} --port 80">
+    </div>
+    <div class="grow-200">
+      <label>Description</label>
+      <input type="text" name="description" placeholder="Service version scan">
+    </div>
+    <button class="btn btn-primary self-start" type="submit">+ Add Tool</button>
+  </form>
+
+  <div id="tools-list">
+    {% for cat in categories %}
+    <details class="mb-12" open>
+      <summary class="ptr f-12 c-cyan p-4-0">{{ cat }} ({{ tools | selectattr('category', 'eq', cat) | list | length }})</summary>
+      <div class="pl-8">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Command</th><th>Description</th><th>Args</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for tool in tools if tool.category == cat %}
+            <tr>
+              <td class="c-yellow nowrap">{{ tool.name }}</td>
+              <td class="mono-tiny break-all">{{ tool.command }}</td>
+              <td>{{ tool.description }}</td>
+              <td class="mono-tiny">{{ tool.args_template }}</td>
+              <td class="nowrap right">
+                <button class="btn btn-mini btn-ghost" onclick="openToolEdit({{ tool.id }}, '{{ tool.name|e }}', '{{ tool.command|e }}', '{{ tool.category|e }}', '{{ tool.description|e }}', '{{ tool.args_template|e }}')">✎</button>
+                <button class="btn btn-mini btn-danger" onclick="deleteTool({{ tool.id }})">✕</button>
+                <button class="btn btn-mini btn-primary" onclick="runTool({{ tool.id }})">▶ Run</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endfor %}
+    {% set uncategorized = tools | selectattr('category', 'eq', '') | list %}
+    {% if uncategorized %}
+    <details class="mb-12" open>
+      <summary class="ptr f-12 c-cyan p-4-0">Uncategorized ({{ uncategorized | length }})</summary>
+      <div class="pl-8">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Command</th><th>Description</th><th>Args</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for tool in uncategorized %}
+            <tr>
+              <td class="c-yellow nowrap">{{ tool.name }}</td>
+              <td class="mono-tiny break-all">{{ tool.command }}</td>
+              <td>{{ tool.description }}</td>
+              <td class="mono-tiny">{{ tool.args_template }}</td>
+              <td class="nowrap right">
+                <button class="btn btn-mini btn-ghost" onclick="openToolEdit({{ tool.id }}, '{{ tool.name|e }}', '{{ tool.command|e }}', '{{ tool.category|e }}', '{{ tool.description|e }}', '{{ tool.args_template|e }}')">✎</button>
+                <button class="btn btn-mini btn-danger" onclick="deleteTool({{ tool.id }})">✕</button>
+                <button class="btn btn-mini btn-primary" onclick="runTool({{ tool.id }})">▶ Run</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Edit Tool Modal -->
+<div class="modal-backdrop" id="tool-edit-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Edit Tool</div>
+      <button class="modal-close" onclick="closeToolEdit()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="flex-col" id="tool-edit-form">
+        <input type="hidden" name="tool_id" id="edit-tool-id">
+        <label>Name</label>
+        <input type="text" name="name" id="edit-tool-name" required>
+        <label>Command</label>
+        <input type="text" name="command" id="edit-tool-command" required>
+        <label>Category</label>
+        <input type="text" name="category" id="edit-tool-category">
+        <label>Args Template</label>
+        <input type="text" name="args_template" id="edit-tool-args" placeholder="{target} --port 80">
+        <label>Description</label>
+        <input type="text" name="description" id="edit-tool-desc">
+        <button class="btn btn-primary mt-12" type="submit">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Run Tool Modal -->
+<div class="modal-backdrop" id="tool-run-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Run Tool</div>
+      <button class="modal-close" onclick="closeToolRun()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="flex-col" id="tool-run-form">
+        <input type="hidden" name="tool_id" id="run-tool-id">
+        <label>Arguments (optional)</label>
+        <input type="text" name="args" id="run-tool-args" placeholder="e.g. 10.10.10.5 -p 80">
+        <button class="btn btn-primary mt-12" type="submit">Run</button>
+      </form>
+      <div id="tool-run-output" class="mt-16 mono-block maxh-300 hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openToolEdit(id, name, command, category, description, args_template) {
+  document.getElementById('edit-tool-id').value = id;
+  document.getElementById('edit-tool-name').value = name;
+  document.getElementById('edit-tool-command').value = command;
+  document.getElementById('edit-tool-category').value = category;
+  document.getElementById('edit-tool-args').value = args_template;
+  document.getElementById('edit-tool-desc').value = description;
+  document.getElementById('tool-edit-modal').classList.add('active');
+}
+function closeToolEdit() {
+  document.getElementById('tool-edit-modal').classList.remove('active');
+}
+
+function runTool(id) {
+  document.getElementById('run-tool-id').value = id;
+  document.getElementById('run-tool-args').value = '';
+  document.getElementById('tool-run-output').classList.add('hidden');
+  document.getElementById('tool-run-modal').classList.add('active');
+}
+function closeToolRun() {
+  document.getElementById('tool-run-modal').classList.remove('active');
+}
+
+async function deleteTool(id) {
+  if (!confirm('Delete this tool?')) return;
+  const res = await fetch('/tools-db/delete?ws={{ active_ws }}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+    body: 'tool_id=' + id
+  });
+  if (res.ok) location.reload();
+}
+
+document.getElementById('tool-edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const res = await fetch('/tools-db/update?ws={{ active_ws }}', {
+    method: 'POST', body: fd,
+    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
+  });
+  if (res.ok) { closeToolEdit(); location.reload(); }
+});
+
+document.getElementById('tool-run-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const out = document.getElementById('tool-run-output');
+  out.classList.remove('hidden');
+  out.textContent = 'Running...';
+  const res = await fetch('/tools-db/run?ws={{ active_ws }}', {
+    method: 'POST', body: fd,
+    headers: { 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
+  });
+  const data = await res.json();
+  out.textContent = (data.output || '') + (data.error ? '\n[ERROR] ' + data.error : '');
+});
+</script>
+{% endblock %}

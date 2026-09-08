@@ -97,6 +97,30 @@ async def init_db():
                 FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
             );
 
+            CREATE TABLE IF NOT EXISTS tools (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                category TEXT,
+                command TEXT NOT NULL,
+                description TEXT,
+                args_template TEXT,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                tags TEXT DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id)
+            );
+
             -- Default workspace
             INSERT OR IGNORE INTO workspaces (name, notes)
             VALUES ('default', 'Default workspace');
@@ -341,5 +365,199 @@ async def clear_python_history(workspace: str) -> int:
         )
         await db.commit()
         return cur.rowcount
+    finally:
+        await _close(db)
+
+
+# ── Tools helpers ──────────────────────────────────────────────────────────────
+
+async def add_tool(workspace: str, name: str, command: str, category: str = "",
+                   description: str = "", args_template: str = "") -> int:
+    """Save a custom tool/command to the workspace."""
+    ws = await get_workspace(workspace)
+    if not ws:
+        ws = await create_workspace(workspace)
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            """INSERT INTO tools (workspace_id, name, category, command, description, args_template)
+               VALUES (?,?,?,?,?,?)""",
+            (ws["id"], name, category, command, description, args_template)
+        )
+        await db.commit()
+        return cur.lastrowid
+    finally:
+        await _close(db)
+
+
+async def get_tools(workspace: str, category: str | None = None) -> list[dict]:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return []
+    db = await get_db()
+    try:
+        if category:
+            cur = await db.execute(
+                "SELECT * FROM tools WHERE workspace_id = ? AND category = ? ORDER BY name",
+                (ws["id"], category)
+            )
+        else:
+            cur = await db.execute(
+                "SELECT * FROM tools WHERE workspace_id = ? ORDER BY category, name",
+                (ws["id"],)
+            )
+        rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        await _close(db)
+
+
+async def get_tool(workspace: str, tool_id: int) -> dict | None:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return None
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "SELECT * FROM tools WHERE workspace_id = ? AND id = ?",
+            (ws["id"], tool_id)
+        )
+        row = await cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        await _close(db)
+
+
+async def update_tool(workspace: str, tool_id: int, **kwargs) -> dict | None:
+    allowed = {"name", "category", "command", "description", "args_template"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return await get_tool(workspace, tool_id)
+    setters = ", ".join(f"{k} = ?" for k in fields)
+    setters += ", updated_at = datetime('now')"
+    values = list(fields.values()) + [tool_id]
+    ws = await get_workspace(workspace)
+    if not ws:
+        return None
+    db = await get_db()
+    try:
+        await db.execute(
+            f"UPDATE tools SET {setters} WHERE workspace_id = ? AND id = ?",
+            values + [ws["id"]]
+        )
+        await db.commit()
+    finally:
+        await _close(db)
+    return await get_tool(workspace, tool_id)
+
+
+async def delete_tool(workspace: str, tool_id: int) -> bool:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return False
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "DELETE FROM tools WHERE workspace_id = ? AND id = ?",
+            (ws["id"], tool_id)
+        )
+        await db.commit()
+        return cur.rowcount > 0
+    finally:
+        await _close(db)
+
+
+# ── Notes helpers ──────────────────────────────────────────────────────────────
+
+async def add_note(workspace: str, title: str, content: str, tags: str = "") -> int:
+    """Save a note to the workspace."""
+    ws = await get_workspace(workspace)
+    if not ws:
+        ws = await create_workspace(workspace)
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "INSERT INTO notes (workspace_id, title, content, tags) VALUES (?,?,?,?)",
+            (ws["id"], title, content, tags)
+        )
+        await db.commit()
+        return cur.lastrowid
+    finally:
+        await _close(db)
+
+
+async def get_notes(workspace: str, tag: str | None = None) -> list[dict]:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return []
+    db = await get_db()
+    try:
+        if tag:
+            cur = await db.execute(
+                "SELECT * FROM notes WHERE workspace_id = ? AND tags LIKE ? ORDER BY updated_at DESC",
+                (ws["id"], f"%{tag}%")
+            )
+        else:
+            cur = await db.execute(
+                "SELECT * FROM notes WHERE workspace_id = ? ORDER BY updated_at DESC",
+                (ws["id"],)
+            )
+        rows = await cur.fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        await _close(db)
+
+
+async def get_note(workspace: str, note_id: int) -> dict | None:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return None
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "SELECT * FROM notes WHERE workspace_id = ? AND id = ?",
+            (ws["id"], note_id)
+        )
+        row = await cur.fetchone()
+        return dict(row) if row else None
+    finally:
+        await _close(db)
+
+
+async def update_note(workspace: str, note_id: int, **kwargs) -> dict | None:
+    allowed = {"title", "content", "tags"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return await get_note(workspace, note_id)
+    setters = ", ".join(f"{k} = ?" for k in fields)
+    setters += ", updated_at = datetime('now')"
+    values = list(fields.values()) + [note_id]
+    ws = await get_workspace(workspace)
+    if not ws:
+        return None
+    db = await get_db()
+    try:
+        await db.execute(
+            f"UPDATE notes SET {setters} WHERE workspace_id = ? AND id = ?",
+            values + [ws["id"]]
+        )
+        await db.commit()
+    finally:
+        await _close(db)
+    return await get_note(workspace, note_id)
+
+
+async def delete_note(workspace: str, note_id: int) -> bool:
+    ws = await get_workspace(workspace)
+    if not ws:
+        return False
+    db = await get_db()
+    try:
+        cur = await db.execute(
+            "DELETE FROM notes WHERE workspace_id = ? AND id = ?",
+            (ws["id"], note_id)
+        )
+        await db.commit()
+        return cur.rowcount > 0
     finally:
         await _close(db)

@@ -3,11 +3,13 @@ Forensic - File Inspector Plugin
 Extracts metadata, magic bytes, strings from a file.
 """
 import os
+import platform
 import re
+import shutil
 import struct
 from pathlib import Path
 from ctf.core.plugin import PluginBase, PluginResult, register_plugin
-from ctf.core.process import run, is_available
+from ctf.core.process import run
 from ctf.core import workspace as ws_util
 
 # Common magic bytes → file type
@@ -41,6 +43,30 @@ class FileInspector(PluginBase):
     name = "file_inspect"
     description = "Inspect file: magic bytes, metadata, strings, hex preview"
     category = "forensic"
+
+    def _get_exiftool_cmd(self):
+        """Get the exiftool command, using WSL on Windows if available."""
+        if platform.system() == "Windows":
+            if shutil.which("wsl"):
+                try:
+                    import subprocess
+                    result = subprocess.run(["wsl", "-d", "kali-linux", "--", "which", "exiftool"],
+                                          capture_output=True, timeout=30)
+                    if result.returncode == 0:
+                        return ["wsl", "-d", "kali-linux", "--", "exiftool"]
+                except Exception:
+                    pass
+        return ["exiftool"]
+
+    def _to_wsl_path(self, path: Path) -> str:
+        """Convert Windows path to WSL path."""
+        if platform.system() == "Windows":
+            path_str = str(path.resolve())
+            if len(path_str) >= 2 and path_str[1] == ':':
+                drive = path_str[0].lower()
+                rest = path_str[2:].replace('\\', '/')
+                return f"/mnt/{drive}{rest}"
+        return str(path)
 
     async def execute(self, target: str, **kwargs) -> PluginResult:
         # Web-facing inspection is sandboxed to the current workspace so the
@@ -98,8 +124,10 @@ class FileInspector(PluginBase):
         data["strings"] = self._extract_strings(raw)
 
         # Exiftool if available
-        if is_available("exiftool"):
-            result = await run("exiftool", str(path), timeout=15)
+        exiftool_cmd = self._get_exiftool_cmd()
+        if exiftool_cmd != ["exiftool"] or shutil.which("exiftool"):
+            exiftool_path = self._to_wsl_path(path) if exiftool_cmd[0] == "wsl" else str(path)
+            result = await run(*exiftool_cmd, exiftool_path, timeout=15)
             if result.ok:
                 data["exiftool"] = result.stdout
 
