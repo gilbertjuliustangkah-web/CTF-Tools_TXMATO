@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "ctf-toolkit"
 version = "0.1.0"
 description = "CTF Toolkit - Unified CLI + Web Dashboard"
+license = "MIT"
+authors = ["TXMATO"]
 requires-python = ">=3.10"
 dependencies = [
     "typer>=0.12",
@@ -32,6 +34,9 @@ asyncio_mode = "auto"
 
 [project.scripts]
 ctf = "ctf.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/gilbertjuliustangkah-web/CTF-Tools_TXMATO"
 
 [tool.setuptools.packages.find]
 where = ["."]
